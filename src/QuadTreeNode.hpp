@@ -1,11 +1,11 @@
 #ifndef QUADTREENODE_HPP
 #define QUADTREENODE_HPP
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "gif.h"
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/core/core.hpp"
+#include "stb_image.h"
+#include "stb_image_write.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -13,11 +13,13 @@
 #include <cmath>
 #include <tuple>
 #include <queue>
+#include <cstring>
+#include <stdio.h>
 
-extern cv::Mat img;
-extern cv::Mat img2;
+extern unsigned char* img_data;
+extern unsigned char* img2_data;
+extern int img_width, img_height, img_channels;
 
-using namespace cv;
 using namespace std;
 
 class QuadTreeNode {
@@ -129,13 +131,19 @@ class QuadTreeNode {
 
         for (int i = x; i < x + height; i++) {
           for (int j = y; j < y + width; j++) {
-            avgR += img.at<Vec3b>(i, j)[0];
-            avgG += img.at<Vec3b>(i, j)[1];
-            avgB += img.at<Vec3b>(i, j)[2];
-    
-            avgR2 += img.at<Vec3b>(i, j)[0] * img.at<Vec3b>(i, j)[0];
-            avgG2 += img.at<Vec3b>(i, j)[1] * img.at<Vec3b>(i, j)[1];
-            avgB2 += img.at<Vec3b>(i, j)[2] * img.at<Vec3b>(i, j)[2];
+            int idx = (i * img_width + j) * img_channels;
+
+            int8_t r = img_data[idx + 0];
+            int8_t g = img_data[idx + 1];
+            int8_t b = img_data[idx + 2];
+
+            avgR += r;
+            avgG += g;
+            avgB += b;
+
+            avgR2 += r * r;
+            avgG2 += g * g;
+            avgB2 += b * b;
           }
         }
     
@@ -174,12 +182,25 @@ class QuadTreeNode {
       }
     }
 
+    void fill_rectangle(unsigned char* image) {
+        if (!image) return;
+
+        for (int i = x; i < x + height; ++i) {
+            for (int j = y; j < y + width; ++j) {
+                int idx = (i * img_width + j) * img_channels;
+                image[idx] = static_cast<unsigned char>(avgR);
+                image[idx + 1] = static_cast<unsigned char>(avgG);
+                image[idx + 2] = static_cast<unsigned char>(avgB);
+            }
+        }
+    }
+
     void fill_rectangle_real() {
-      rectangle(img, Point(y, x), Point(y + width - 1, x + height - 1), Scalar(avgR, avgG, avgB), -1);
+        fill_rectangle(img_data);
     }
 
     void fill_rectangle_fake() {
-      rectangle(img2, Point(y, x), Point(y + width - 1, x + height - 1), Scalar(avgR, avgG, avgB), -1);
+        fill_rectangle(img2_data);
     }
 
     QuadTreeNode& operator=(const QuadTreeNode& node) {

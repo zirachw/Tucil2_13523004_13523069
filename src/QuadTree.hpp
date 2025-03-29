@@ -3,16 +3,34 @@
 
 #include "QuadTreeNode.hpp"
 
-extern cv::Mat real_img;
-extern cv::Mat img;
-cv::Mat img2;
+extern unsigned char* img_data; 
+extern unsigned char* img_real;  
+extern unsigned char* img2_data;
+int img_width, img_height, img_channels;
+
+struct ImageBuffer {
+    vector<unsigned char> buf;
+    static void write_func(void* context, void* data, int size) {
+        ImageBuffer* b = (ImageBuffer*)context;
+        b->buf.insert(b->buf.end(), (unsigned char*)data, (unsigned char*)data + size);
+    }
+};
+
+size_t get_encoded_jpeg_size(unsigned char* image, int w, int h) {
+    ImageBuffer out;
+    stbi_write_jpg_to_func(ImageBuffer::write_func, &out, w, h, 3, image, 90);
+    return out.buf.size();
+}
 
 class QuadTree {
   private:
-    int width, height;
+    int width, height, channel;
     int mode;
     int minimum_block;
     int threshold;
+    string image_input_path;
+    string image_output_path;
+    string gif_output_path;
 
     bool last; 
     //last == true if we need to write the image to gif
@@ -25,36 +43,63 @@ class QuadTree {
   
   public:
     QuadTree() {
+        cout << "Enter image input path\n";
+        cout << "Example : D:\\something_in.jpg\n";
+        cin >> image_input_path;
+
+        cout << "Enter image output path\n";
+        cout << "Example : D:\\something_out.jpg\n";
+        cin >> image_output_path;
+
+        cout << "Enter gif output path\n";
+        cout << "Example : D:\\something_out.gif\n";
+        cin >> gif_output_path;
+
         get_image();
         mode = 1;
         root = QuadTreeNode(0, 0, height, width, 0, mode);
         minimum_block = 1;
-        threshold = 300;
+        threshold = 100;
         last = true;
 
-        GifBegin(&g, "D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna.gif", width, height, 50);
+        char* gif_output_path_c = new char[gif_output_path.length() + 1];
+        strcpy(gif_output_path_c, gif_output_path.c_str());
+
+        GifBegin(&g, gif_output_path_c, width, height, 50);
         data = (uint8_t*)malloc(width * height * 4);
     }
 
     void get_image() {
-        img = imread("D:\\lenna.png", IMREAD_COLOR);
-        if (img.empty()) {
-            cout << "Could not open or find the image" << endl;
+        img_data = stbi_load(image_input_path.c_str(), &width, &height, &channel, 3);
+        if (!img_data) {
+            cout << "Could not open or find the image\n";
             return;
         }
-        real_img = img.clone();
-        width = img.cols;
-        height = img.rows;
+    
+        channel = 3; // Force RGB
+        img_real = (unsigned char*)malloc(width * height * 3);
+        memcpy(img_real, img_data, width * height * 3);
+    
+        img2_data = (unsigned char*)malloc(width * height * 3);
+        memcpy(img2_data, img_data, width * height * 3);
+
+        img_width = width;
+        img_height = height;
+        img_channels = channel;
+        cout << "Image loaded successfully\n";
+        cout << "Image size: " << width << "x" << height << ", Channels: " << channel << endl;
     }
 
     void write_fake_image_to_gif() {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                Vec3b color = img2.at<Vec3b>(j, i);
-                data[(j * width + i) * 4] = color[2];
-                data[(j * width + i) * 4 + 1] = color[1];
-                data[(j * width + i) * 4 + 2] = color[0];
-                data[(j * width + i) * 4 + 3] = 255;
+                int idx = (j * width + i) * 3;
+                int out_idx = (j * width + i) * 4;
+
+                data[out_idx + 0] = img2_data[idx + 0];
+                data[out_idx + 1] = img2_data[idx + 1];
+                data[out_idx + 2] = img2_data[idx + 2];
+                data[out_idx + 3] = 255;
             }
         }
 
@@ -62,18 +107,19 @@ class QuadTree {
     }
 
     void write_image_real(string path) {
-        imwrite(path, img);
+        stbi_write_jpg(path.c_str(), width, height, 3, img_data, 90);
     }
-
+    
     void write_image_fake(string path) {
-        imwrite(path, img2);
+        stbi_write_jpg(path.c_str(), width, height, 3, img2_data, 90);
     }
 
     void perform_quadtree() {
         queue<QuadTreeNode> q;
         q.push(root);
         int curMaxStep = 0;
-        img2 = img.clone();
+        //img2 = img.clone();
+        memcpy(img2_data, img_data, width * height * 3);
 
         while (!q.empty()) {
             QuadTreeNode node = q.front();
@@ -94,19 +140,19 @@ class QuadTree {
                 if (curMaxStep < 10) {
                     if (last) {
                         write_fake_image_to_gif();
-                        //write_image_fake("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna0" + to_string(curMaxStep) + ".png");
+                        //write_image_fake("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna0" + to_string(curMaxStep) + ".jpg");
                         //GifWriteFrame(&g, img2.data, this->width, this->height, 100);
                     }
                 }
                 else {
                     if (last) {
                         write_fake_image_to_gif();
-                        //write_image_fake("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna" + to_string(curMaxStep) + ".png");
+                        //write_image_fake("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna" + to_string(curMaxStep) + ".jpg");
                         //GifWriteFrame(&g, img2.data, this->width, this->height, 100);
                     }
                 }
 
-                img2 = img.clone();
+                memcpy(img2_data, img_data, width * height * 3);
             }
 
             double error = node.getError();
@@ -131,15 +177,17 @@ class QuadTree {
         if (last) {
             for (int i = 0; i < this->width; i++) {
                 for (int j = 0; j < this->height; j++) {
-                    Vec3b color = img2.at<Vec3b>(j, i);
-                    data[(j * this->width + i) * 4] = color[2];
-                    data[(j * this->width + i) * 4 + 1] = color[1];
-                    data[(j * this->width + i) * 4 + 2] = color[0];
-                    data[(j * this->width + i) * 4 + 3] = 255;
+                    int idx = (j * this->width + i) * 3;
+                    int out_idx = (j * this->width + i) * 4;
+
+                    data[out_idx + 0] = img_data[idx + 0];
+                    data[out_idx + 1] = img_data[idx + 1];
+                    data[out_idx + 2] = img_data[idx + 2];
+                    data[out_idx + 3] = 255;
                 }
             }
 
-            write_image_real("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lennaRES.png");
+            write_image_real(image_output_path);
             GifWriteFrame(&g, data, this->width, this->height, 100);
 
             GifEnd(&g);
@@ -153,27 +201,25 @@ class QuadTree {
         // IMPORTANT : NEED IF ELSE TO HANDLE RANGE OF L AND R
         // IMPORTANT : HANDLE PNG/JPG FORMAT (?)
 
-        vector<uchar> buf;
-        imencode(".png", img, buf);
-        size_t bef_img_size = buf.size();
+        //imwrite("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\aveORI.jpg", img);
+
+        size_t bef_img_size = get_encoded_jpeg_size(img_data, width, height);
         size_t target_img_size = bef_img_size - (bef_img_size * ratio);
 
-        // cout << "original size : " << bef_img_size << endl;
-        // cout << "target size : " << target_img_size << endl;
+        cout << "original size : " << bef_img_size << endl;
+        cout << "target size : " << target_img_size << endl;
 
         int best_threshold = -1;
         last = false;
 
-        for (int i = 1; i <= 15; i++) {
+        for (int i = 1; i <= 13; i++) {
             double mid = (l + r) / 2;
             threshold = mid;
             perform_quadtree();
+ 
+            size_t cur_img_size = get_encoded_jpeg_size(img_data, width, height);
 
-            vector<uchar> buf;
-            imencode(".png", img, buf);   
-            size_t cur_img_size = buf.size();
-
-            // cout << "threshold : " << mid << " size : " << cur_img_size << endl;
+            cout << "threshold : " << mid << " size : " << cur_img_size << endl;
 
             if (cur_img_size <= target_img_size) {
                 best_threshold = mid;
@@ -181,8 +227,7 @@ class QuadTree {
             } else {
                 l = mid;
             }
-
-            img = real_img.clone();
+            memcpy(img_data, img_real, width * height * 3);
         }
 
         last = true;
