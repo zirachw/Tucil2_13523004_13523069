@@ -15,6 +15,7 @@
 #include <queue>
 #include <cstring>
 #include <stdio.h>
+#include <unordered_map>
 
 extern unsigned char* imgData;
 extern unsigned char* img2Data;
@@ -29,6 +30,9 @@ class QuadTreeNode {
         double error;
         double threshold;
         double avgR, avgG, avgB;
+        // Constants for SSIM calculation
+        const double C1 = 6.5025; // (0.01 * 255)^2
+        const double C2 = 58.5225; // (0.03 * 255)^2
 
     public:
 
@@ -59,7 +63,7 @@ class QuadTreeNode {
             this->avgG = 0;
             this->avgB = 0;
 
-            calculateError(1);
+            calculateError(mode);
         }
 
         int getStep() {return step;}
@@ -92,62 +96,267 @@ class QuadTreeNode {
 
         void calculateError(int mode) {
         if (mode == 1) {
-            //Variance
-
-            double avgR = 0, avgG = 0, avgB = 0;
-            double avgR2 = 0, avgG2 = 0, avgB2 = 0;
-            double varianceR = 0, varianceG = 0, varianceB = 0;
-
+            //Variance - Corrected implementation
+            double sumR = 0, sumG = 0, sumB = 0;
+            
+            // First pass: calculate average RGB values
             for (int i = x; i < x + height; i++) {
-            for (int j = y; j < y + width; j++) {
-                int idx = (i * imgWidth + j) * imgChannels;
-
-                int8_t r = imgData[idx + 0];
-                int8_t g = imgData[idx + 1];
-                int8_t b = imgData[idx + 2];
-
-                avgR += r;
-                avgG += g;
-                avgB += b;
-
-                avgR2 += r * r;
-                avgG2 += g * g;
-                avgB2 += b * b;
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
+                }
             }
-            }
-        
+            
             int n = width * height;
-            avgR /= n;
-            avgG /= n;
-            avgB /= n;
-            avgR2 /= n;
-            avgG2 /= n;
-            avgB2 /= n;
-        
-            varianceR = avgR2 - avgR * avgR;
-            varianceG = avgG2 - avgG * avgG;
-            varianceB = avgB2 - avgB * avgB;
-        
-            //cout << x << " " << y << " " << width << " " << height << " " << (varianceR + varianceG + varianceB) / 3 << endl;
-        
+            double avgR = sumR / n;
+            double avgG = sumG / n;
+            double avgB = sumB / n;
+            
+            // Second pass: calculate squared differences for variance
+            double sumSqDevR = 0, sumSqDevG = 0, sumSqDevB = 0;
+            
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    double diffR = r - avgR;
+                    double diffG = g - avgG;
+                    double diffB = b - avgB;
+                    
+                    sumSqDevR += diffR * diffR;
+                    sumSqDevG += diffG * diffG;
+                    sumSqDevB += diffB * diffB;
+                }
+            }
+            
+            double varianceR = sumSqDevR / n;
+            double varianceG = sumSqDevG / n;
+            double varianceB = sumSqDevB / n;
+            
             setError((varianceR + varianceG + varianceB) / 3);
             setAvg(avgR, avgG, avgB);
         }
         
         else if (mode == 2) {
-            //Mean 
+            // Mean Absolute Deviation (MAD)
+            double sumAbsDevR = 0, sumAbsDevG = 0, sumAbsDevB = 0;
+            double sumR = 0, sumG = 0, sumB = 0;
+            
+            // First pass: calculate average RGB values
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
+                }
+            }
+            
+            int n = width * height;
+            double avgR = sumR / n;
+            double avgG = sumG / n;
+            double avgB = sumB / n;
+            
+            // Second pass: calculate absolute deviations
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    sumAbsDevR += fabs(r - avgR);
+                    sumAbsDevG += fabs(g - avgG);
+                    sumAbsDevB += fabs(b - avgB);
+                }
+            }
+            
+            double madR = sumAbsDevR / n;
+            double madG = sumAbsDevG / n;
+            double madB = sumAbsDevB / n;
+            
+            double madRGB = (madR + madG + madB) / 3.0;
+            
+            setError(madRGB);
+            setAvg(avgR, avgG, avgB);
         }
         
         else if (mode == 3) {
-            //Max pixel difference
+            // Max Pixel Difference
+            uint8_t minR = 255, minG = 255, minB = 255;
+            uint8_t maxR = 0, maxG = 0, maxB = 0;
+            double sumR = 0, sumG = 0, sumB = 0;
+            
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    // Find min and max values for each channel
+                    minR = min(minR, r);
+                    minG = min(minG, g);
+                    minB = min(minB, b);
+                    
+                    maxR = max(maxR, r);
+                    maxG = max(maxG, g);
+                    maxB = max(maxB, b);
+                    
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
+                }
+            }
+            
+            double diffR = maxR - minR;
+            double diffG = maxG - minG;
+            double diffB = maxB - minB;
+            
+            double diffRGB = (diffR + diffG + diffB) / 3.0;
+            
+            int n = width * height;
+            double avgR = sumR / n;
+            double avgG = sumG / n;
+            double avgB = sumB / n;
+            
+            setError(diffRGB);
+            setAvg(avgR, avgG, avgB);
         }
         
         else if (mode == 4) {
-            //entrophy
+            // Entropy
+            unordered_map<int, int> histR, histG, histB;
+            double sumR = 0, sumG = 0, sumB = 0;
+            int n = width * height;
+            
+            // Build histograms and calculate average values
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    uint8_t r = imgData[idx + 0];
+                    uint8_t g = imgData[idx + 1];
+                    uint8_t b = imgData[idx + 2];
+                    
+                    histR[r]++;
+                    histG[g]++;
+                    histB[b]++;
+                    
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
+                }
+            }
+            
+            // Calculate entropy for each channel
+            double entropyR = 0, entropyG = 0, entropyB = 0;
+            
+            for (const auto& pair : histR) {
+                double probability = static_cast<double>(pair.second) / n;
+                entropyR -= probability * log2(probability);
+            }
+            
+            for (const auto& pair : histG) {
+                double probability = static_cast<double>(pair.second) / n;
+                entropyG -= probability * log2(probability);
+            }
+            
+            for (const auto& pair : histB) {
+                double probability = static_cast<double>(pair.second) / n;
+                entropyB -= probability * log2(probability);
+            }
+            
+            double entropyRGB = (entropyR + entropyG + entropyB) / 3.0;
+            
+            double avgR = sumR / n;
+            double avgG = sumG / n;
+            double avgB = sumB / n;
+            
+            setError(entropyRGB);
+            setAvg(avgR, avgG, avgB);
         }
         
-        else {
-            //ssim
+        else if (mode == 5) {
+            // SSIM (Structural Similarity Index)
+            // We'll calculate a simplified version of SSIM since we're comparing within the same block
+            // rather than between original and compressed
+            
+            double sumR = 0, sumG = 0, sumB = 0;
+            double sumSquareR = 0, sumSquareG = 0, sumSquareB = 0;
+            int n = width * height;
+            
+            // First pass: compute means and variances
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    
+                    double r = imgData[idx + 0];
+                    double g = imgData[idx + 1];
+                    double b = imgData[idx + 2];
+                    
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
+                    
+                    sumSquareR += r * r;
+                    sumSquareG += g * g;
+                    sumSquareB += b * b;
+                }
+            }
+            
+            double meanR = sumR / n;
+            double meanG = sumG / n;
+            double meanB = sumB / n;
+            
+            double varR = (sumSquareR / n) - (meanR * meanR);
+            double varG = (sumSquareG / n) - (meanG * meanG);
+            double varB = (sumSquareB / n) - (meanB * meanB);
+            
+            // For SSIM, we're adapting the formula to measure within-block variability
+            // Higher variance = more dissimilarity = higher error
+            // For a single region, we can use variance as an inverse proxy for SSIM
+            // In a regular block, SSIM would be close to 1 (low error)
+            // In a varied block, SSIM would be lower (high error)
+            
+            // We invert the SSIM-inspired metric to make it an error value
+            // where higher means more difference
+            double ssimR = (2 * meanR * meanR + C1) / (meanR * meanR + meanR * meanR + C1);
+            double ssimG = (2 * meanG * meanG + C1) / (meanG * meanG + meanG * meanG + C1);
+            double ssimB = (2 * meanB * meanB + C1) / (meanB * meanB + meanB * meanB + C1);
+            
+            // Factor in variance
+            ssimR *= (2 * C2) / (varR + C2);
+            ssimG *= (2 * C2) / (varG + C2);
+            ssimB *= (2 * C2) / (varB + C2);
+            
+            // Average and invert (1 - ssim) to get error
+            double ssimRGB = (ssimR + ssimG + ssimB) / 3.0;
+            double error = 1.0 - ssimRGB;
+            
+            // Scale the error to make it comparable with other methods
+            error *= 100.0;
+            
+            setError(error);
+            setAvg(meanR, meanG, meanB);
         }
         }
 
