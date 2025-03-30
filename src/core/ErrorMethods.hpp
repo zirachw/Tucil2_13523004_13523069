@@ -1,17 +1,11 @@
 #ifndef ERROR_METHODS_HPP
 #define ERROR_METHODS_HPP
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "gif.h"
-#include "stb_image.h"
-#include "stb_image_write.h"
+#include "Image.hpp"
 #include <unordered_map>
 
 extern int imgWidth, imgHeight, imgChannels;
 extern unsigned char* currImgData;
-
-using namespace std;
 
 class ErrorMethod {
     protected:  

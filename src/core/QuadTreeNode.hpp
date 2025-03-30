@@ -18,15 +18,15 @@ class QuadTreeNode {
     public:
 
         QuadTreeNode() {
-        x = 0;
-        y = 0;
-        width = 0;
-        height = 0;
-        step = 0;
-        error = 0;
-        avgR = 0;
-        avgG = 0;
-        avgB = 0;
+            x = 0;
+            y = 0;
+            width = 0;
+            height = 0;
+            step = 0;
+            error = 0;
+            avgR = 0;
+            avgG = 0;
+            avgB = 0;
         }
 
         QuadTreeNode(int step, int x, int y, int width, int height, int mode) {
@@ -40,7 +40,6 @@ class QuadTreeNode {
             this->avgR = 0;
             this->avgG = 0;
             this->avgB = 0;
-
             calculateError(mode);
         }
 
@@ -119,17 +118,17 @@ class QuadTreeNode {
         }
 
         QuadTreeNode& operator=(const QuadTreeNode& node) {
-        x = node.x;
-        y = node.y;
-        width = node.width;
-        height = node.height;
-        step = node.step;
-        error = node.error;
-        avgR = node.avgR;
-        avgG = node.avgG;
-        avgB = node.avgB;
+            x = node.x;
+            y = node.y;
+            width = node.width;
+            height = node.height;
+            step = node.step;
+            error = node.error;
+            avgR = node.avgR;
+            avgG = node.avgG;
+            avgB = node.avgB;
 
-        return *this;
+            return *this;
         }
 };
 
