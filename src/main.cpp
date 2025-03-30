@@ -1,34 +1,26 @@
-#include "Input.hpp"
+#include "core/Input.hpp"
 
-unsigned char* imgData = nullptr;
-unsigned char* imgReal = nullptr;
-unsigned char* img2Data = nullptr;
+unsigned char *currImgData = nullptr;
+unsigned char *initImgData = nullptr;
+unsigned char *tempImgData = nullptr;
 
-int main() {
-
-    // Initialize input object to get image path and other parameters
+int main()
+{
+    cout << CLEAR_SCREEN;
+    cout << "Welcome to Quadtree Compression!" << endl;
     Input input;
-    string imageInputPath = input.getImageInputPath();
-    int mode = input.getMode();
-    int threshold = input.getThreshold();
-    int minimumBlock = input.getMinimumBlock();
-    double targetPercentage = input.getTargetPercentage();
-    string imageOutputPath = input.getImageOutputPath();
-    string gifOutputPath = input.getGifOutputPath();
-    
-    QuadTree qt(imageInputPath, mode, threshold, minimumBlock, targetPercentage, imageOutputPath, gifOutputPath);
-    
-    //no target compression
-    qt.performQuadTree();
 
+    cout << "Input done." << endl;
+    QuadTree qt(input.getInputPath(), input.getMode(), input.getThreshold(), input.getMinBlock(),
+                input.getTargetPercentage(), input.getOutputPath(), input.getGifPath());
+
+    cout << "QuadTree initialized, target percentage: " << input.getTargetPercentage() << endl;
     cout << "Performing quadtree compression..." << endl;
-    stbi_image_free(imgData);
-    free(imgReal);
-    free(img2Data);
-
-    // cout << "Performing quadtree compression with target compression..." << endl;
-    // with target compression reducing 30% of the original image size
-    // qt.performBinserQuadTree(0.1);
+    if (input.getTargetPercentage() == 0) qt.performQuadTree();
+    else qt.performBinserQuadTree(input.getTargetPercentage());
 
     cout << "Quadtree compression completed." << endl;
+    stbi_image_free(currImgData);
+    free(initImgData);
+    free(tempImgData);
 }
