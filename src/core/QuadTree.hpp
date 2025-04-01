@@ -4,6 +4,7 @@
 #include <queue>
 #include "QuadTreeNode.hpp"
 #include "Image.hpp"
+#include <time.h>
 
 extern unsigned char* currImgData; 
 extern unsigned char* initImgData;  
@@ -21,6 +22,15 @@ class QuadTree {
         QuadTreeNode root;
         GifWriter g;
         uint8_t* data;
+
+        time_t startTime, endTime;
+
+        int initialSize;
+        int finalSize;
+        double compressionPercentage;
+
+        int quadtreeDepth;
+        int quadtreeNode;
 
         void writeCurrImageToGif() {
             for (int i = 0; i < imgWidth; i++) {
@@ -55,11 +65,11 @@ class QuadTree {
         }
 
         void writeCurrImage(string path) const {
-            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, currImgData, 90);
+            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, currImgData, 80);
         }
         
         void writeTempImage(string path) const {
-            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, 90);
+            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, 80);
         }
   
         
@@ -84,6 +94,11 @@ class QuadTree {
 
             GifBegin(&g, gifPathCopy, imgWidth, imgHeight, 50);
             data = (uint8_t*)malloc(imgWidth * imgHeight * 4);
+
+            initialSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
+            startTime = clock();
+
+            quadtreeNode = 0;
         }
     
         ~QuadTree() {
@@ -102,10 +117,8 @@ class QuadTree {
             while (!q.empty()) {
                 QuadTreeNode node = q.front();
                 q.pop();
-
-                if (node.getWidth() == 0 || node.getHeight() == 0 || node.getWidth()*node.getHeight() <= minBlock) {
-                    continue;
-                }
+                
+                if (lastImg) quadtreeNode++;
                 
                 int step = node.getStep();
                 int X = node.getX();
@@ -114,6 +127,7 @@ class QuadTree {
                 int height = node.getHeight();
 
                 if (step > curMaxStep) {
+                    quadtreeDepth = step;
                     curMaxStep = step;
                     if (curMaxStep < 10) {
                         if (lastImg) {
@@ -133,9 +147,7 @@ class QuadTree {
                     memcpy(tempImgData, currImgData, width * height * 3);
                 }
 
-                double error = node.getError();
-
-                if (error < threshold) {
+                if (node.getHeight() == 0 || node.getWidth() == 0 || min(node.getWidth(), node.getHeight()) < minBlock || node.getError() < threshold) {
                     node.fillCurrRectangle();
                     if (lastImg) {
                         node.fillTempRectangle();
@@ -146,16 +158,21 @@ class QuadTree {
                     if (lastImg) {
                         node.fillTempRectangle();
                     }
-                    q.push(QuadTreeNode(step + 1, X, Y, width / 2, height / 2, mode));
-                    q.push(QuadTreeNode(step + 1, X + height / 2, Y, width / 2, height - height / 2, mode));
-                    q.push(QuadTreeNode(step + 1, X, Y + width / 2, width - width / 2, height / 2, mode));
-                    q.push(QuadTreeNode(step + 1, X + height / 2, Y + width / 2, width - width / 2, height - height / 2, mode));
+                    q.emplace(step + 1, X, Y, width / 2, height / 2, mode);
+                    q.emplace(step + 1, X + height / 2, Y, width / 2, height - height / 2, mode);
+                    q.emplace(step + 1, X, Y + width / 2, width - width / 2, height / 2, mode);
+                    q.emplace(step + 1, X + height / 2, Y + width / 2, width - width / 2, height - height / 2, mode);
                 }
             }
 
             if (lastImg) {
                 writeCurrImageToGif();
                 writeCurrImage(outputPath);
+                
+                endTime = clock();  
+                finalSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
+                compressionPercentage = ((double)(initialSize - finalSize) / initialSize) * 100.0;
+
                 GifEnd(&g);
                 free(data);
             }
@@ -214,7 +231,7 @@ class QuadTree {
     
                 size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
 
-                cout << "threshold : " << mid << " size : " << currentImageSize << endl;
+                // cout << "threshold : " << mid << " size : " << currentImageSize << endl;
 
                 if (currentImageSize <= targetImageSize) {
                     bestThreshold = mid;
@@ -228,7 +245,33 @@ class QuadTree {
             lastImg = true;
             threshold = bestThreshold;
             performQuadTree();
+            // cout << "threshold : " << bestThreshold << " size : " << currentImageSize << endl;
         }
+
+        int getQuadtreeDepth() const {
+            return quadtreeDepth;
+        }
+        int getQuadtreeNode() const {
+            return quadtreeNode;
+        }
+
+        double getCompressionPercentage() const {
+            return round(compressionPercentage * 100) / 100.0;
+        }
+
+        int getExecutionTime() const {
+            return (endTime - startTime) / (CLOCKS_PER_SEC / 1000);
+        }
+
+        int getInitialSize() const {
+            return initialSize;
+        }
+
+        int getFinalSize() const {
+            return finalSize;
+        }
+
+
 };
 
 #endif

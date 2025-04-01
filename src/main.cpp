@@ -20,6 +20,13 @@ int main()
     else qt.performBinserQuadTree(input.getTargetPercentage());
 
     cout << "Quadtree compression completed." << endl;
+    cout << "Executing time: " << qt.getExecutionTime() << "ms" << endl;
+    cout << "Initial size: " << qt.getInitialSize() << endl;
+    cout << "Final size: " << qt.getFinalSize() << endl;
+    cout << "Compression percentage: " << qt.getCompressionPercentage() << endl;
+    cout << "Quadtree depth: " << qt.getQuadtreeDepth() << endl;
+    cout << "Quadtree node: " << qt.getQuadtreeNode() << endl;
+
     stbi_image_free(currImgData);
     free(initImgData);
     free(tempImgData);

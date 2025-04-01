@@ -30,7 +30,7 @@ class Image {
 
         static size_t getEncodedSize(unsigned char* image, int w, int h) {
             buffer.clear();
-            stbi_write_jpg_to_func(writeFunc, &buffer, w, h, 3, image, 90);
+            stbi_write_jpg_to_func(writeFunc, &buffer, w, h, 3, image, 80);
             return buffer.size();
         }
 

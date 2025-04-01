@@ -12,7 +12,6 @@ class ErrorMethod {
         double upperThreshold;
         double lowerThreshold;
         double avgR, avgG, avgB;
-
     public:
         virtual double calculateError(unsigned char* currImgData, int x, int y, int width, int height) = 0;
         double getAvgR() const { return avgR; }
@@ -23,60 +22,158 @@ class ErrorMethod {
 };
 
 class Variance : public ErrorMethod {
+    private:
+        long long** prefsumR;
+        long long** prefsumG;
+        long long** prefsumB;
+        long long** prefsumR2;
+        long long** prefsumG2;
+        long long** prefsumB2;
+
     public:
         Variance() {
             upperThreshold = 127.5 * 127.5; // Example threshold value
             lowerThreshold = 0;
-        }
-        
-        double calculateError(unsigned char* currImgData, int x, int y, int width, int height) override {
-            //Variance - Corrected implementation
-            double sumR = 0, sumG = 0, sumB = 0;
-            
-            // First pass: calculate average RGB values
-            for (int i = x; i < x + height; i++) {
-                for (int j = y; j < y + width; j++) {
+
+            cout << "Calculating prefix sum..." << endl;
+            cout << "Image width: " << imgWidth << ", Image height: " << imgHeight << endl;
+
+            prefsumR = new long long*[imgHeight];
+            prefsumG = new long long*[imgHeight];
+            prefsumB = new long long*[imgHeight];
+            prefsumR2 = new long long*[imgHeight];
+            prefsumG2 = new long long*[imgHeight];
+            prefsumB2 = new long long*[imgHeight];
+            for (int i = 0; i < imgHeight; ++i) {
+                prefsumR[i] = new long long[imgWidth];
+                prefsumG[i] = new long long[imgWidth];
+                prefsumB[i] = new long long[imgWidth];
+                prefsumR2[i] = new long long[imgWidth];
+                prefsumG2[i] = new long long[imgWidth];
+                prefsumB2[i] = new long long[imgWidth];
+            }
+
+            for (int i = 0; i < imgHeight; i++) {
+                for (int j = 0; j < imgWidth; j++) {
                     int idx = (i * imgWidth + j) * imgChannels;
-                    
-                    uint8_t r = currImgData[idx + 0];
-                    uint8_t g = currImgData[idx + 1];
-                    uint8_t b = currImgData[idx + 2];
-                    
-                    sumR += r;
-                    sumG += g;
-                    sumB += b;
+                   
+                    prefsumR[i][j] = currImgData[idx + 0];
+                    prefsumG[i][j] = currImgData[idx + 1];
+                    prefsumB[i][j] = currImgData[idx + 2];
+                    prefsumR2[i][j] = currImgData[idx + 0] * currImgData[idx + 0];
+                    prefsumG2[i][j] = currImgData[idx + 1] * currImgData[idx + 1];
+                    prefsumB2[i][j] = currImgData[idx + 2] * currImgData[idx + 2];
+
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
+                    else if (i == 0) {
+                        prefsumR[i][j] += prefsumR[i][j - 1];
+                        prefsumG[i][j] += prefsumG[i][j - 1];
+                        prefsumB[i][j] += prefsumB[i][j - 1];
+                        prefsumR2[i][j] += prefsumR2[i][j - 1];
+                        prefsumG2[i][j] += prefsumG2[i][j - 1];
+                        prefsumB2[i][j] += prefsumB2[i][j - 1];
+                    }
+                    else if (j == 0) {
+                        prefsumR[i][j] += prefsumR[i - 1][j];
+                        prefsumG[i][j] += prefsumG[i - 1][j];
+                        prefsumB[i][j] += prefsumB[i - 1][j];
+                        prefsumR2[i][j] += prefsumR2[i - 1][j];
+                        prefsumG2[i][j] += prefsumG2[i - 1][j];
+                        prefsumB2[i][j] += prefsumB2[i - 1][j];
+                    }
+                    else {
+                        prefsumR[i][j] += prefsumR[i - 1][j] + prefsumR[i][j - 1] - prefsumR[i - 1][j - 1];
+                        prefsumG[i][j] += prefsumG[i - 1][j] + prefsumG[i][j - 1] - prefsumG[i - 1][j - 1];
+                        prefsumB[i][j] += prefsumB[i - 1][j] + prefsumB[i][j - 1] - prefsumB[i - 1][j - 1];
+                        prefsumR2[i][j] += prefsumR2[i - 1][j] + prefsumR2[i][j - 1] - prefsumR2[i - 1][j - 1];
+                        prefsumG2[i][j] += prefsumG2[i - 1][j] + prefsumG2[i][j - 1] - prefsumG2[i - 1][j - 1];
+                        prefsumB2[i][j] += prefsumB2[i - 1][j] + prefsumB2[i][j - 1] - prefsumB2[i - 1][j - 1];
+                    }
+
+                    // if (i < 10 && j < 10) {
+                    //     cout << "i: " << i << ", j: " << j << ", prefsumR: " << prefsumR[i][j] << ", prefsumG: " << prefsumG[i][j] << ", prefsumB: " << prefsumB[i][j] << endl;
+                    //     cout << "i: " << i << ", j: " << j << ", prefsumR2: " << prefsumR2[i][j] << ", prefsumG2: " << prefsumG2[i][j] << ", prefsumB2: " << prefsumB2[i][j] << endl;
+                    // }
+
+                    if (i > 555 && j > 995) {
+                        cout << "i: " << i << ", j: " << j << ", prefsumR: " << prefsumR[i][j] << ", prefsumG: " << prefsumG[i][j] << ", prefsumB: " << prefsumB[i][j] << endl;
+                        cout << "i: " << i << ", j: " << j << ", prefsumR2: " << prefsumR2[i][j] << ", prefsumG2: " << prefsumG2[i][j] << ", prefsumB2: " << prefsumB2[i][j] << endl;
+                    }
                 }
             }
-            
-            int n = width * height;
+        }
+
+        ~Variance() {
+            for (int i = 0; i < imgHeight; ++i) {
+                delete[] prefsumR[i];
+                delete[] prefsumG[i];
+                delete[] prefsumB[i];
+                delete[] prefsumR2[i];
+                delete[] prefsumG2[i];
+                delete[] prefsumB2[i];
+            }
+            delete[] prefsumR;
+            delete[] prefsumG;
+            delete[] prefsumB;
+            delete[] prefsumR2;
+            delete[] prefsumG2;
+            delete[] prefsumB2;
+        }
+        
+        double calculateError(unsigned char* currImgData, int row, int col, int width, int height) override {
+            long long sumR, sumG, sumB;
+            long long sumR2, sumG2, sumB2;
+
+            if (width == 0 || height == 0) {
+                return 0;
+            }
+
+            if (row == 0 && col == 0) {
+                sumR = prefsumR[row + height - 1][col + width - 1];
+                sumG = prefsumG[row + height - 1][col + width - 1];
+                sumB = prefsumB[row + height - 1][col + width - 1];
+
+                sumR2 = prefsumR2[row + height - 1][col + width - 1];
+                sumG2 = prefsumG2[row + height - 1][col + width - 1];
+                sumB2 = prefsumB2[row + height - 1][col + width - 1];
+            }
+            else if (row == 0) {
+                sumR = prefsumR[row + height - 1][col + width - 1] - prefsumR[row + height - 1][col - 1];
+                sumG = prefsumG[row + height - 1][col + width - 1] - prefsumG[row + height - 1][col - 1];
+                sumB = prefsumB[row + height - 1][col + width - 1] - prefsumB[row + height - 1][col - 1];
+
+                sumR2 = prefsumR2[row + height - 1][col + width - 1] - prefsumR2[row + height - 1][col - 1];
+                sumG2 = prefsumG2[row + height - 1][col + width - 1] - prefsumG2[row + height - 1][col - 1];
+                sumB2 = prefsumB2[row + height - 1][col + width - 1] - prefsumB2[row + height - 1][col - 1];
+            }
+            else if (col == 0) {
+                sumR = prefsumR[row + height - 1][col + width - 1] - prefsumR[row - 1][col + width - 1];
+                sumG = prefsumG[row + height - 1][col + width - 1] - prefsumG[row - 1][col + width - 1];
+                sumB = prefsumB[row + height - 1][col + width - 1] - prefsumB[row - 1][col + width - 1];
+
+                sumR2 = prefsumR2[row + height - 1][col + width - 1] - prefsumR2[row - 1][col + width - 1];
+                sumG2 = prefsumG2[row + height - 1][col + width - 1] - prefsumG2[row - 1][col + width - 1];
+                sumB2 = prefsumB2[row + height - 1][col + width - 1] - prefsumB2[row - 1][col + width - 1];
+            }
+            else {
+                sumR = prefsumR[row + height - 1][col + width - 1] - prefsumR[row - 1][col + width - 1] - prefsumR[row + height - 1][col - 1] + prefsumR[row - 1][col - 1];
+                sumG = prefsumG[row + height - 1][col + width - 1] - prefsumG[row - 1][col + width - 1] - prefsumG[row + height - 1][col - 1] + prefsumG[row - 1][col - 1];
+                sumB = prefsumB[row + height - 1][col + width - 1] - prefsumB[row - 1][col + width - 1] - prefsumB[row + height - 1][col - 1] + prefsumB[row - 1][col - 1];
+
+                sumR2 = prefsumR2[row + height - 1][col + width - 1] - prefsumR2[row - 1][col + width - 1] - prefsumR2[row + height - 1][col - 1] + prefsumR2[row - 1][col - 1];
+                sumG2 = prefsumG2[row + height - 1][col + width - 1] - prefsumG2[row - 1][col + width - 1] - prefsumG2[row + height - 1][col - 1] + prefsumG2[row - 1][col - 1];
+                sumB2 = prefsumB2[row + height - 1][col + width - 1] - prefsumB2[row - 1][col + width - 1] - prefsumB2[row + height - 1][col - 1] + prefsumB2[row - 1][col - 1];
+            }
+
+            double n = width * height;
             avgR = sumR / n;
             avgG = sumG / n;
             avgB = sumB / n;
-            
-            // Second pass: calculate squared differences for variance
-            double sumSqDevR = 0, sumSqDevG = 0, sumSqDevB = 0;
-            
-            for (int i = x; i < x + height; i++) {
-                for (int j = y; j < y + width; j++) {
-                    int idx = (i * imgWidth + j) * imgChannels;
-                    
-                    uint8_t r = currImgData[idx + 0];
-                    uint8_t g = currImgData[idx + 1];
-                    uint8_t b = currImgData[idx + 2];
-                    
-                    double diffR = r - avgR;
-                    double diffG = g - avgG;
-                    double diffB = b - avgB;
-                    
-                    sumSqDevR += diffR * diffR;
-                    sumSqDevG += diffG * diffG;
-                    sumSqDevB += diffB * diffB;
-                }
-            }
-            
-            double varianceR = sumSqDevR / n;
-            double varianceG = sumSqDevG / n;
-            double varianceB = sumSqDevB / n;
+            double varianceR = (sumR2 / n) - (avgR * avgR);
+            double varianceG = (sumG2 / n) - (avgG * avgG);
+            double varianceB = (sumB2 / n) - (avgB * avgB);
 
             return (varianceR + varianceG + varianceB) / 3.0;
         }

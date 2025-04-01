@@ -7,6 +7,7 @@
 extern unsigned char* currImgData;
 extern unsigned char* tempImgData;
 extern int imgWidth, imgHeight, imgChannels;
+ErrorMethod* errorMethod = nullptr;
 
 class QuadTreeNode {
 
@@ -16,7 +17,6 @@ class QuadTreeNode {
         double avgR, avgG, avgB;
 
     public:
-
         QuadTreeNode() {
             x = 0;
             y = 0;
@@ -69,30 +69,32 @@ class QuadTreeNode {
         void setError(double error) {this->error = error;}
 
         void calculateError(int mode) {
-            ErrorMethod* errorMethod = nullptr;
-            
-            switch(mode) {
-                case 1:
-                    errorMethod = new Variance();
-                    break;
-                case 2:
-                    errorMethod = new MeanAbsoluteDeviation();
-                    break;
-                case 3:
-                    errorMethod = new MaxPixelDifference();
-                    break;
-                case 4:
-                    errorMethod = new Entropy();
-                    break;
-                case 5:
-                    errorMethod = new SSIM();
-                    break;
+            if (errorMethod == nullptr) {
+                switch(mode) {
+                    case 1:
+                        errorMethod = new Variance();
+                        break;
+                    case 2:
+                        errorMethod = new MeanAbsoluteDeviation();
+                        break;
+                    case 3:
+                        errorMethod = new MaxPixelDifference();
+                        break;
+                    case 4:
+                        errorMethod = new Entropy();
+                        break;
+                    case 5:
+                        errorMethod = new SSIM();
+                        break;
+                }
             }
             
             if (errorMethod) {
                 setError(errorMethod->calculateError(currImgData, x, y, width, height));
                 setAvg(errorMethod->getAvgR(), errorMethod->getAvgG(), errorMethod->getAvgB());
-                delete errorMethod;
+            }
+            else {
+                cout << "Error: Error method not initialized." << endl;
             }
         }
 
