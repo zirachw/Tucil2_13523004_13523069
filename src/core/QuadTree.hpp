@@ -74,7 +74,7 @@ class QuadTree {
   
         
     public:
-        QuadTree(string inputPath, int mode, int threshold, int minBlock, double targetPercentage, string outputPath, string gifPath) {
+        QuadTree(string inputPath, int mode, double threshold, int minBlock, double targetPercentage, string outputPath, string gifPath) {
             
             this -> inputPath = inputPath;
             this -> mode = mode;
@@ -119,35 +119,24 @@ class QuadTree {
                 q.pop();
                 
                 if (lastImg) quadtreeNode++;
+
                 
                 int step = node.getStep();
                 int X = node.getX();
                 int Y = node.getY();
                 int width = node.getWidth();
                 int height = node.getHeight();
+                if (step < curMaxStep) continue;
 
-                if (step > curMaxStep) {
+
+                if (step > curMaxStep && lastImg) {
                     quadtreeDepth = step;
                     curMaxStep = step;
-                    if (curMaxStep < 10) {
-                        if (lastImg) {
-                            writeTempImageToGif();
-                            //writeTempImage("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna0" + to_string(curMaxStep) + ".jpg");
-                            //GifWriteFrame(&g, img2.data, this -> width, this -> height, 100);
-                        }
-                    }
-                    else {
-                        if (lastImg) {
-                            writeTempImageToGif();
-                            //writeTempImage("D:\\Tugas ITB\\Stima\\Tucil 2\\Tucil2_13523004_13523069\\src\\output\\lenna" + to_string(curMaxStep) + ".jpg");
-                            //GifWriteFrame(&g, img2.data, this -> width, this -> height, 100);
-                        }
-                    }
-
+                    writeTempImageToGif();
                     memcpy(tempImgData, currImgData, width * height * 3);
                 }
 
-                if (node.getHeight() == 0 || node.getWidth() == 0 || min(node.getWidth(), node.getHeight()) < minBlock || node.getError() < threshold) {
+                if (width == 0 || height == 0 || min(node.getWidth(), node.getHeight()) < minBlock || node.getError() <= threshold) {
                     node.fillCurrRectangle();
                     if (lastImg) {
                         node.fillTempRectangle();
@@ -158,10 +147,10 @@ class QuadTree {
                     if (lastImg) {
                         node.fillTempRectangle();
                     }
-                    q.emplace(step + 1, X, Y, width / 2, height / 2, mode);
-                    q.emplace(step + 1, X + height / 2, Y, width / 2, height - height / 2, mode);
-                    q.emplace(step + 1, X, Y + width / 2, width - width / 2, height / 2, mode);
-                    q.emplace(step + 1, X + height / 2, Y + width / 2, width - width / 2, height - height / 2, mode);
+                    q.push(QuadTreeNode(step + 1, X, Y, width / 2, height / 2, mode));
+                    q.push(QuadTreeNode(step + 1, X + height / 2, Y, width / 2, height - height / 2, mode));
+                    q.push(QuadTreeNode(step + 1, X, Y + width / 2, width - width / 2, height / 2, mode));
+                    q.push(QuadTreeNode(step + 1, X + height / 2, Y + width / 2, width - width / 2, height - height / 2 , mode));
                 }
             }
 
@@ -221,7 +210,7 @@ class QuadTree {
             cout << "original size : " << initialImageSize << endl;
             cout << "target size : " << targetImageSize << endl;
 
-            int bestThreshold = -1;
+            double bestThreshold = -1;
             lastImg = false;
 
             for (int i = 1; i <= 13; i++) {

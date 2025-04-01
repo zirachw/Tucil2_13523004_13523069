@@ -96,11 +96,6 @@ class Variance : public ErrorMethod {
                     //     cout << "i: " << i << ", j: " << j << ", prefsumR: " << prefsumR[i][j] << ", prefsumG: " << prefsumG[i][j] << ", prefsumB: " << prefsumB[i][j] << endl;
                     //     cout << "i: " << i << ", j: " << j << ", prefsumR2: " << prefsumR2[i][j] << ", prefsumG2: " << prefsumG2[i][j] << ", prefsumB2: " << prefsumB2[i][j] << endl;
                     // }
-
-                    if (i > 555 && j > 995) {
-                        cout << "i: " << i << ", j: " << j << ", prefsumR: " << prefsumR[i][j] << ", prefsumG: " << prefsumG[i][j] << ", prefsumB: " << prefsumB[i][j] << endl;
-                        cout << "i: " << i << ", j: " << j << ", prefsumR2: " << prefsumR2[i][j] << ", prefsumG2: " << prefsumG2[i][j] << ", prefsumB2: " << prefsumB2[i][j] << endl;
-                    }
                 }
             }
         }
@@ -341,68 +336,129 @@ class Entropy : public ErrorMethod {
 class SSIM : public ErrorMethod {
     private:
         const double C2 = 58.5225; // (0.03 * 255)^2
+        double** sumR;
+        double** sumG;
+        double** sumB;
+        double** sumR2;
+        double** sumG2;
+        double** sumB2;
         
     public:
         SSIM() {
             upperThreshold = 1.0;
             lowerThreshold = 0;
+
+            sumR = new double*[imgHeight];
+            sumG = new double*[imgHeight];
+            sumB = new double*[imgHeight];
+            sumR2 = new double*[imgHeight];
+            sumG2 = new double*[imgHeight];
+            sumB2 = new double*[imgHeight];
+
+            for (int i = 0; i < imgHeight; ++i) {
+                sumR[i] = new double[imgWidth];
+                sumG[i] = new double[imgWidth];
+                sumB[i] = new double[imgWidth];
+                sumR2[i] = new double[imgWidth];
+                sumG2[i] = new double[imgWidth];
+                sumB2[i] = new double[imgWidth];
+            }
+
+            for (int i = 0; i < imgHeight; i++) {
+                for (int j = 0; j < imgWidth; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+                    sumR[i][j] = currImgData[idx + 0];
+                    sumG[i][j] = currImgData[idx + 1];
+                    sumB[i][j] = currImgData[idx + 2];
+                    sumR2[i][j] = currImgData[idx + 0] * currImgData[idx + 0];
+                    sumG2[i][j] = currImgData[idx + 1] * currImgData[idx + 1];
+                    sumB2[i][j] = currImgData[idx + 2] * currImgData[idx + 2];
+
+                    if (i == 0 && j == 0) {
+                        continue;
+                    }
+                    else if (i == 0) {
+                        sumR[i][j] += sumR[i][j - 1];
+                        sumG[i][j] += sumG[i][j - 1];
+                        sumB[i][j] += sumB[i][j - 1];
+                        sumR2[i][j] += sumR2[i][j - 1];
+                        sumG2[i][j] += sumG2[i][j - 1];
+                        sumB2[i][j] += sumB2[i][j - 1];
+                    }
+                    else if (j == 0) {
+                        sumR[i][j] += sumR[i - 1][j];
+                        sumG[i][j] += sumG[i - 1][j];
+                        sumB[i][j] += sumB[i - 1][j];
+                        sumR2[i][j] += sumR2[i - 1][j];
+                        sumG2[i][j] += sumG2[i - 1][j];
+                        sumB2[i][j] += sumB2[i - 1][j];
+                    }
+                    else {
+                        sumR[i][j] += sumR[i - 1][j] + sumR[i][j - 1] - sumR[i - 1][j - 1];
+                        sumG[i][j] += sumG[i - 1][j] + sumG[i][j - 1] - sumG[i - 1][j - 1];
+                        sumB[i][j] += sumB[i - 1][j] + sumB[i][j - 1] - sumB[i - 1][j - 1];
+                        sumR2[i][j] += sumR2[i - 1][j] + sumR2[i][j - 1] - sumR2[i - 1][j - 1];
+                        sumG2[i][j] += sumG2[i - 1][j] + sumG2[i][j - 1] - sumG2[i - 1][j - 1];
+                        sumB2[i][j] += sumB2[i - 1][j] + sumB2[i][j - 1] - sumB2[i - 1][j - 1];
+                    }
+                }
+            }
         }
         
         double calculateError(unsigned char* currImgData, int x, int y, int width, int height) override {
-            double sumR = 0, sumG = 0, sumB = 0;
-            double sumSquareR = 0, sumSquareG = 0, sumSquareB = 0;
+            int x1 = x;
+            int y1 = y;
+            int x2 = x + height - 1;
+            int y2 = y + width - 1;
             int n = width * height;
-            
-            // Calculate means and variances in one pass
-            for (int i = x; i < x + height; i++) {
-                for (int j = y; j < y + width; j++) {
-                    int idx = (i * imgWidth + j) * imgChannels;
-                    
-                    double r = currImgData[idx + 0];
-                    double g = currImgData[idx + 1];
-                    double b = currImgData[idx + 2];
-                    
-                    sumR += r;
-                    sumG += g;
-                    sumB += b;
-                    
-                    sumSquareR += r * r;
-                    sumSquareG += g * g;
-                    sumSquareB += b * b;
-                }
+
+            if (n == 0) {
+                //cout << x1 << " " << y1 << " " << x2 << " " << y2 << endl;
+                //cout << "Error: Zero area in SSIM calculation." << endl;
+                return 0;
             }
-            
-            double meanR = sumR / n;
-            double meanG = sumG / n;
-            double meanB = sumB / n;
-            
-            double varR = (sumSquareR / n) - (meanR * meanR);
-            double varG = (sumSquareG / n) - (meanG * meanG);
-            double varB = (sumSquareB / n) - (meanB * meanB);
+            if (x1 < 0 || y1 < 0 || x2 >= imgHeight || y2 >= imgWidth) {
+               // cout << "Error: Out of bounds in SSIM calculation." << endl;
+                return 0;
+            }
+            if (x1 > x2 || y1 > y2) {
+               // cout << "Error: Invalid rectangle in SSIM calculation." << endl;
+                return 0;
+            }
 
-            // In the standard SSIM formula, when comparing an image x with an image y:
-            // SSIM(x,y) = [2μxμy + C1] / [μx² + μy² + C1] · [2σxy + C2] / [σx² + σy² + C2]
+            // Helper lambda to extract sum from integral image
+            auto getSum = [&](double** integral) -> double {
+                double total = integral[x2][y2];
+                if (x1 > 0) total -= integral[x1 - 1][y2];
+                if (y1 > 0) total -= integral[x2][y1 - 1];
+                if (x1 > 0 && y1 > 0) total += integral[x1 - 1][y1 - 1];
+                return total;
+            };
 
-            // When y is a uniform block with the same mean as x (μy = μx and σy = 0), this simplifies to:
-            // SSIM(x,uniform) = [2μx² + C1] / [2μx² + C1] · [C2] / [σx² + C2]
+            double sumRVal = getSum(sumR);
+            double sumGVal = getSum(sumG);
+            double sumBVal = getSum(sumB);
+            double sumR2Val = getSum(sumR2);
+            double sumG2Val = getSum(sumG2);
+            double sumB2Val = getSum(sumB2);
 
-            // The first term equals 1, so:
-            // SSIM(x,uniform) = C2 / (σx² + C2)
-            
+            double meanR = sumRVal / n;
+            double meanG = sumGVal / n;
+            double meanB = sumBVal / n;
+
+            double varR = (sumR2Val / n) - (meanR * meanR);
+            double varG = (sumG2Val / n) - (meanG * meanG);
+            double varB = (sumB2Val / n) - (meanB * meanB);
+
             double ssimR = C2 / (varR + C2);
             double ssimG = C2 / (varG + C2);
             double ssimB = C2 / (varB + C2);
-            
-            // Invert and average to get the error (1 - SSIM)
-            double errorR = 1.0 - ssimR;
-            double errorG = 1.0 - ssimG;
-            double errorB = 1.0 - ssimB;
-            
+
             avgR = meanR;
             avgG = meanG;
             avgB = meanB;
-            
-            return (errorR + errorG + errorB) / 3.0;;
+
+            return (1.0 - ssimR + 1.0 - ssimG + 1.0 - ssimB) / 3.0;
         }
 };
 

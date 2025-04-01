@@ -213,7 +213,7 @@ class Input {
                 }
                 
                 // Check for non-numeric characters (allow minus sign)
-                if (input.find_first_not_of("0123456789-") != string::npos) {
+                if (input.find_first_not_of("0123456789-.") != string::npos) {
                     cout << "Error: Non-numeric character found. Please enter numbers only." << endl;
                     continue;
                 }
@@ -227,7 +227,6 @@ class Input {
             
                 isValid = true;
             }
-            
             this->threshold = thresholdValue;
         }
 
