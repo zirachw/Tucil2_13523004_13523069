@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include "QuadTree.hpp"
 
+// Global variables for image data
 extern unsigned char* currImgData;
 extern unsigned char* initImgData;
 extern unsigned char* tempImgData;
@@ -24,8 +25,6 @@ class Input {
         // Helper function to extract filename with extension from a path
         string getFilename(const string& path) {
             size_t lastSlash = path.find_last_of("/\\");
-            
-            // Extract the filename part (everything after the last slash)
             string filename = path.substr(lastSlash + 1);
             return filename;
         }
@@ -125,9 +124,10 @@ class Input {
                 }
                 
                 // Load image
-                if (!Image::loadImage(path, extension)) {
+                string errorMsg = Image::loadImage(path, extension);
+                if (errorMsg != "") {
                     showLog(1);
-                    cout << "[!] Error: Image cannot be loaded, please check the file." << endl << endl;
+                    cout << "[!] Error: " << errorMsg << endl << endl;
                     continue;
                 }
         
