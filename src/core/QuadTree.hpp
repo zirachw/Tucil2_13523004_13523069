@@ -3,7 +3,6 @@
 
 #include <queue>
 #include "QuadTreeNode.hpp"
-#include "Image.hpp"
 #include <time.h>
 
 extern unsigned char* currImgData; 
@@ -204,11 +203,11 @@ class QuadTree {
             
             cout << "Using error method " << mode << " with threshold range: " << lowerThreshold << " to " << upperThreshold << endl;
 
-            size_t initialImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
-            size_t targetImageSize = initialImageSize - (initialImageSize * ratio);
+            size_t initImageSize = Image::getOriginalSize(inputPath);
+            size_t targetImageSize = initImageSize - (initImageSize * ratio);
 
-            cout << "original size : " << initialImageSize << endl;
-            cout << "target size : " << targetImageSize << endl;
+            cout << "Init Size: " << initImageSize << "bytes (" << Image::getSizeInKB(initImageSize) << " KB)" << endl;
+            cout << "Target Size: " << targetImageSize << "bytes (" << Image::getSizeInKB(targetImageSize) << " KB)" << endl;
 
             double bestThreshold = -1;
             lastImg = false;
