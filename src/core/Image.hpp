@@ -8,6 +8,7 @@
 #include "../libs/stb_image.h"
 #include "../libs/stb_image_write.h"
 #include <vector>
+#include <iomanip>  // For std::fixed and std::setprecision
 
 extern unsigned char* currImgData;
 extern unsigned char* initImgData;
@@ -17,52 +18,60 @@ int imgWidth, imgHeight, imgChannels;
 using namespace std;
 
 class Image {
-
-    private:
-        static int width, height, channel;
-        static vector<unsigned char> buffer;
     
     public:
-        static void writeFunc(void* context, void* data, int size) {
-            vector<unsigned char>& buf = *static_cast<vector<unsigned char>*>(context);
-            buf.insert(buf.end(), static_cast<unsigned char*>(data), static_cast<unsigned char*>(data) + size);
+        // Callback function to count bytes without storing them
+        static void count_bytes(void *context, void *data, int size) {
+            (void)data; // Unused parameter
+            size_t *total = reinterpret_cast<size_t *>(context);
+            *total += static_cast<size_t>(size);
         }
 
         static size_t getEncodedSize(unsigned char* image, int w, int h) {
-            buffer.clear();
-            stbi_write_jpg_to_func(writeFunc, &buffer, w, h, 3, image, 80);
-            return buffer.size();
+            // Use the count_bytes callback instead of storing data
+            size_t totalBytes = 0;
+            stbi_write_jpg_to_func(count_bytes, &totalBytes, w, h, 3, image, 90);
+            return totalBytes;
         }
 
-        static bool loadImage(string path) {
-            currImgData = stbi_load(path.c_str(), &width, &height, &channel, 3);
+        static size_t getOriginalSize(string path) {
+
+            FILE* file = fopen(path.c_str(), "rb");
+            if (!file) {
+                cout << "Could not open the image file\n";
+                return false;
+            }
+            
+            // Get original file size
+            fseek(file, 0, SEEK_END);
+            size_t originalSize = ftell(file);
+            fclose(file);
+
+            return originalSize;
+        }
+
+        static double getSizeInKB(size_t sizeInBytes) {
+            return static_cast<double>(sizeInBytes) / 1024.0;
+        }
+
+        static bool loadImage(string path, string extension) {
+
+            // Load the image
+            currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 3);
             if (!currImgData) {
-                cout << "Could not open or find the image\n";
+                cout << "Could not load the image data\n";
                 return false;
             }
         
-            channel = 3;
-            initImgData = (unsigned char*) malloc (width * height * 3);
-            memcpy(initImgData, currImgData, width * height * 3);
+            imgChannels = 3;
+            initImgData = (unsigned char*) malloc (imgWidth * imgHeight * 3);
+            memcpy(initImgData, currImgData, imgWidth * imgHeight * 3);
         
-            tempImgData = (unsigned char*) malloc (width * height * 3);
-            memcpy(tempImgData, currImgData, width * height * 3);
-
-            imgWidth = width;
-            imgHeight = height;
-            imgChannels = channel;
-
-            cout << "Image loaded successfully\n";
-            cout << "Image size: " << width << "x" << height << ", Channels: " << channel << endl;
+            tempImgData = (unsigned char*) malloc (imgWidth * imgHeight * 3);
+            memcpy(tempImgData, currImgData, imgWidth * imgHeight * 3);
 
             return true;
         }
 };
-
-// Initialize static members
-vector<unsigned char> Image::buffer;
-int Image::width = 0;
-int Image::height = 0;
-int Image::channel = 0;
 
 #endif // IMAGE_HPP
