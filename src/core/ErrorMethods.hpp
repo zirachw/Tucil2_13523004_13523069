@@ -35,9 +35,6 @@ class Variance : public ErrorMethod {
             upperThreshold = 127.5 * 127.5; // Example threshold value
             lowerThreshold = 0;
 
-            cout << "Calculating prefix sum..." << endl;
-            cout << "Image width: " << imgWidth << ", Image height: " << imgHeight << endl;
-
             prefsumR = new long long*[imgHeight];
             prefsumG = new long long*[imgHeight];
             prefsumB = new long long*[imgHeight];
