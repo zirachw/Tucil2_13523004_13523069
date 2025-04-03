@@ -35,7 +35,7 @@ class QuadTree {
         void writeCurrImageToGif() {
             for (int i = 0; i < imgWidth; i++) {
                 for (int j = 0; j < imgHeight; j++) {
-                    int idx = (j * imgWidth + i) * 3;
+                    int idx = (j * imgWidth + i) * imgChannels;
                     int outIdx = (j * imgWidth + i) * 4;
 
                     data[outIdx + 0] = currImgData[idx + 0];
@@ -43,7 +43,7 @@ class QuadTree {
                     data[outIdx + 2] = currImgData[idx + 2];
                     
                     if (inputExtension == "png") {
-                        data[outIdx + 3] = currImgData[idx + 3];
+                        data[outIdx + 3] = 255;
                     } 
                     else {
                         data[outIdx + 3] = 255;
@@ -57,7 +57,7 @@ class QuadTree {
         void writeTempImageToGif() {
             for (int i = 0; i < imgWidth; i++) {
                 for (int j = 0; j < imgHeight; j++) {
-                    int idx = (j * imgWidth + i) * 3;
+                    int idx = (j * imgWidth + i) * imgChannels;
                     int outIdx = (j * imgWidth + i) * 4;
 
                     data[outIdx + 0] = tempImgData[idx + 0];
@@ -65,7 +65,7 @@ class QuadTree {
                     data[outIdx + 2] = tempImgData[idx + 2];
 
                     if (inputExtension == "png") {
-                        data[outIdx + 3] = tempImgData[idx + 3];
+                        data[outIdx + 3] = 255;
                     } 
                     else {
                         data[outIdx + 3] = 255;
