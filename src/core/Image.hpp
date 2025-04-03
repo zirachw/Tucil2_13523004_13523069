@@ -71,14 +71,14 @@ class Image {
             currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 0);
 
             if (imgChannels < 3) {
-                return "Image must have at least 3 channels (RGB), found " + to_string(imgChannels) + " channels.";
+                return "Image-nya harus ada minimal 3 channel (RGB), kok ini cuma " + to_string(imgChannels) + " channel doang.";
             }
 
             bool isPng = (extension == "png");
             imgChannels = isPng ? 4 : 3;
             
             if (!currImgData) {
-                return "Failed to load image, please try again.";
+                return "Image-nya gagal di-load, coba ulang ya...";
             }
             
             initImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
