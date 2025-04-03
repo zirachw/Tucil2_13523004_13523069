@@ -19,7 +19,7 @@ class Input {
     private:
 
         int mode, minBlock;
-        double threshold, targetPercentage;
+        double threshold, upperThreshold, lowerThreshold, targetPercentage;
         string inputPath, inputExtension, errorMethod, outputPath, gifPath;
 
         // Helper function to extract filename with extension from a path
@@ -59,8 +59,7 @@ class Input {
                 directory = path.substr(0, 3);  // Take "D:\"
             } 
             else {
-                // This is a file in a subdirectory
-                directory = path.substr(0, lastSlash);
+                directory = path.substr(0, lastSlash); // This is a file in a subdirectory
             }
             
             // Directory exists or not?
@@ -81,23 +80,20 @@ class Input {
             showLog(1);
             
             while (!isValidFile) {
-                cout << "[?] Enter image input path, supported formats: jpg, jpeg, png" << endl;
-                cout << "[-] Example: D:\\something_in.jpg" << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, path);
                 
                 // Empty input
                 if (path.empty()) {
                     showLog(1);
-                    cout << "[!] Error: Empty input, please enter a path." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
                 // Valid path
                 if (!validatePath(path)) {
                     showLog(1);
-                    cout << "[!] Error: Invalid path format or directory does not exist." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
                     continue;
                 }
                 
@@ -105,13 +101,15 @@ class Input {
                 extension = getExtension(path);
                 if (extension.empty()) {
                     showLog(1);
-                    cout << "[!] Error: No file extension found, please include the file extension." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Jangan lupa extensionnya yaa... udah gede loh" << endl << endl;
                     continue;
                 }
 
                 if (find(allowedExtensions.begin(), allowedExtensions.end(), extension) == allowedExtensions.end()) {
                     showLog(1);
-                    cout << "[!] Error: Invalid file format, only jpg, jpeg, and png formats are supported." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Extensionnya yang dibolehin aja yaa, contohnya ";
+                    cout << RESET BRIGHT_GREEN << ".jpg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << ".jpeg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << ".png" << BRIGHT_WHITE;
+                    cout << RESET BRIGHT_WHITE ITALIC << "." << endl << endl;
                     continue;
                 }
                 
@@ -119,7 +117,7 @@ class Input {
                 ifstream file(path);
                 if (!file) {
                     showLog(1);
-                    cout << "[!] Error: File not found, please enter a valid path." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Ga ada file image-nya bang, lupa taroh ya?" << endl << endl;
                     continue;
                 }
                 
@@ -127,7 +125,7 @@ class Input {
                 string errorMsg = Image::loadImage(path, extension);
                 if (errorMsg != "") {
                     showLog(1);
-                    cout << "[!] Error: " << errorMsg << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: " << errorMsg << endl << endl;
                     continue;
                 }
         
@@ -145,65 +143,63 @@ class Input {
             showLog(2);
             
             while (!isValid) {
-                cout << "[?] Enter mode:" << endl;
-                cout << "[-] 1 ~ Variance" << endl;
-                cout << "[-] 2 ~ Mean Absolute Deviation (MAD)" << endl;
-                cout << "[-] 3 ~ Max Pixel Difference (MPD)" << endl;
-                cout << "[-] 4 ~ Entropy" << endl;
-                cout << "[-] 5 ~ Structural Similarity Index (SSIM)" << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, input);
                 
                 // Empty input
                 if (input.empty()) {
                     showLog(2);
-                    cout << "[!] Error: Empty input, please enter a mode." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
-
+        
                 // Non-numeric characters (allow minus sign)
                 if (input.find_first_not_of("0123456789- ") != string::npos) {
                     showLog(2);
-                    cout << "[!] Error: Non-numeric character found, please enter numbers only." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angka doang bolehnya yaa, input-nya jangan aneh-aneh pls." << endl << endl;
                     continue;
                 }
-
+        
                 // Multiple inputs (whitespace)
                 if (input.find(' ') != string::npos) {
                     showLog(2);
-                    cout << "[!] Error: Multiple values entered, please enter a single number." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bener sih angka doang, tapi gabole multiple input yaa..." << endl << endl;
                     continue;
                 }
                 
                 // Valid range
-                modeValue = stoi(input);
-                if (modeValue < 1 || modeValue > 5) {
+                try {
+                    long long modeValueLL = stoll(input);
+                    if (modeValueLL < 1 || modeValueLL > 5) {
+                        showLog(2);
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bolehnya angka";
+                        cout << RESET BRIGHT_CYAN << " 1" << BRIGHT_WHITE ITALIC << " and " << RESET BRIGHT_CYAN << "5" << BRIGHT_WHITE ITALIC << " doang, yok literasinya" << endl << endl;
+                        continue;
+                    }
+                    
+                    modeValue = static_cast<int>(modeValueLL);
+                    isValid = true;
+                }
+                catch (const std::out_of_range& e) {
                     showLog(2);
-                    cout << "[!] Error: Invalid mode, please enter a number between 1 and 5." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar, coba yang lebih kecil ya" << endl << endl;
                     continue;
                 }
-                
-                isValid = true;
+                catch (const std::invalid_argument& e) {
+                    showLog(2);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format angkanya salah, coba lagi yaa" << endl << endl;
+                    continue;
+                }
             }
             
-            this -> mode = modeValue;
+            this->mode = modeValue;
 
             if (mode == 1) errorMethod = "Variance";
             else if (mode == 2) errorMethod = "Mean Absolute Deviation (MAD)";
             else if (mode == 3) errorMethod = "Max Pixel Difference (MPD)";
             else if (mode == 4) errorMethod = "Entropy";
             else if (mode == 5) errorMethod = "Structural Similarity Index (SSIM)";
-        }
 
-        void validateThreshold() {
-            string input;
-            double thresholdValue;
-            bool isValid = false;
-            double upperThreshold = 0;
-            double lowerThreshold = 0;
-            showLog(3);
-            
             switch(mode) {
                 case 1: {
                     Variance variance;
@@ -236,105 +232,138 @@ class Input {
                     break;
                 }
             }
-            
+        }
+
+        void validateThreshold() {
+            string input;
+            double thresholdValue;
+            bool isValid = false;
+            showLog(3);
+        
             while (!isValid) {
-                cout << "[?] Enter threshold (" << lowerThreshold << "-" << upperThreshold << ")" << endl;
-                cout << "[-] Example: " << (lowerThreshold + upperThreshold) / 2 << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, input);
                 
                 // Empty input
                 if (input.empty()) {
                     showLog(3);
-                    cout << "[!] Error: Empty input, please enter a threshold value." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
+                // Non-numeric characters (allow minus sign and decimal point)
+                if (input.find_first_not_of("0123456789-. ") != string::npos) {
+                    showLog(3);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angka doang bolehnya yaa, input-nya jangan aneh-aneh pls." << endl << endl;
+                    continue;
+                }
+        
                 // Multiple inputs (whitespace)
                 if (input.find(' ') != string::npos) {
                     showLog(3);
-                    cout << "[!] Error: Multiple values entered, please enter a single number." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bener sih angka doang, tapi gabole multiple input yaa..." << endl << endl;
                     continue;
                 }
                 
-                // Non-numeric characters (allow minus sign)
-                if (input.find_first_not_of("0123456789-.") != string::npos) {
+                // Multiple decimal points
+                if (count(input.begin(), input.end(), '.') > 1) {
                     showLog(3);
-                    cout << "[!] Error: Non-numeric character found, please enter numbers only." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Desimal titiknya cuma satu yaa..." << endl << endl;
                     continue;
                 }
                 
                 // Valid range
-                thresholdValue = stod(input);
-                if (thresholdValue < lowerThreshold || thresholdValue > upperThreshold) {
+                try {
+                    thresholdValue = stod(input);
+                    if (thresholdValue < lowerThreshold || thresholdValue > upperThreshold) {
+                        showLog(3);
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid threshold, coba dibaca lagi yaa batasnya dari ";
+                        cout << RESET BRIGHT_CYAN << lowerThreshold << BRIGHT_WHITE ITALIC << " sampai " << RESET BRIGHT_CYAN << upperThreshold << BRIGHT_YELLOW ITALIC << " (Inklusif)." << endl << endl;
+                        continue;
+                    }
+                    
+                    isValid = true;
+                } 
+                catch (const std::out_of_range& e) {
                     showLog(3);
-                    cout << "[!] Error: Invalid threshold, please enter a number between " << lowerThreshold << " and " << upperThreshold << " (Inclusive)." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar atau terlalu kecil." << endl << endl;
+                    continue;
+                } 
+                catch (const std::invalid_argument& e) {
+                    showLog(3);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format angkanya salah, coba lagi yaa." << endl << endl;
                     continue;
                 }
-            
-                isValid = true;
             }
 
-            this -> threshold = thresholdValue;
+            this->threshold = thresholdValue;
         }
 
         void validateMinBlock() {
-            
             string input;
             int blockSize;
             bool isValid = false;
             showLog(4);
             
-            // Calculate the smallest dimension of the image
-            int minDimension = min(imgWidth, imgHeight);
+            int maxBlockSize = imgWidth * imgHeight;
             
             while (!isValid) {
-                cout << "[!] Enter minimum block size, must not exceed the smallest image dimension (" << minDimension << ")" << endl;
-                cout << "[-] Example: 8" << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, input);
                 
                 // Empty input
                 if (input.empty()) {
                     showLog(4);
-                    cout << "[!] Error: Empty input, please enter a block size." << endl << endl;
-                    continue;
-                }
-                
-                // Multiple inputs (whitespace)
-                if (input.find(' ') != string::npos) {
-                    showLog(4);
-                    cout << "[!] Error: Multiple values entered, please enter a single number." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
                 // Non-numeric characters (allow minus sign)
-                if (input.find_first_not_of("0123456789-") != string::npos) {
+                if (input.find_first_not_of("0123456789- ") != string::npos) {
                     showLog(4);
-                    cout << "[!] Error: Non-numeric character found, please enter numbers only." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angka doang bolehnya yaa, input-nya jangan aneh-aneh pls." << endl << endl;
                     continue;
                 }
-            
+        
+                // Multiple inputs (whitespace)
+                if (input.find(' ') != string::npos) {
+                    showLog(4);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bener sih angka doang, tapi gabole multiple input yaa..." << endl << endl;
+                    continue;
+                }
+                
                 // Valid range
-                blockSize = stoi(input);
-                if (blockSize <= 0) {
+                try {
+                    long long blockSizeLL = stoll(input);
+                    if (blockSizeLL <= 0) {
+                        showLog(4);
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Sejak kapan area ada yang negatif :) coba lagi ya" << endl << endl;
+                        continue;
+                    }
+                    
+                    if (blockSizeLL > maxBlockSize) {
+                        showLog(4);
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Block size terlalu besar, maksimal ";
+                        cout << RESET BRIGHT_CYAN << maxBlockSize << " px" << BRIGHT_WHITE ITALIC << " yaa." << endl << endl;
+                        continue;
+                    }
+                    
+                    blockSize = static_cast<int>(blockSizeLL);
+                    isValid = true;
+                }
+                catch (const std::out_of_range& e) {
                     showLog(4);
-                    cout << "[!] Error: Invalid block size, please enter a positive number." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar, coba yang lebih kecil ya" << endl << endl;
                     continue;
                 }
-                
-                if (blockSize > minDimension) {
+                catch (const std::invalid_argument& e) {
                     showLog(4);
-                    cout << "[!] Error: Block size cannot be greater than the smallest image dimension (" << minDimension << ")." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format angkanya salah, coba lagi yaa" << endl << endl;
                     continue;
                 }
-                
-                isValid = true;
             }
             
-            this -> minBlock = blockSize;
+            this->minBlock = blockSize;
         }
         
         void validateTargetPercentage() {
@@ -344,60 +373,65 @@ class Input {
             showLog(5);
             
             while (!isValid) {
-                cout << "[?] Enter target percentage as a decimal (0.0-1.0 where 1.0 = 100%)" << endl;
-                cout << "[-] Example: 0.85 for 85%" << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, input);
                 
                 // Empty input
                 if (input.empty()) {
                     showLog(5);
-                    cout << "[!] Error: Empty input, please enter a value." << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
+                // Non-numeric characters (allow minus sign and decimal point)
+                if (input.find_first_not_of("0123456789-. ") != string::npos) {
+                    showLog(5);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angka doang bolehnya yaa, input-nya jangan aneh-aneh pls." << endl << endl;
+                    continue;
+                }
+
                 // Multiple inputs (whitespace)
                 if (input.find(' ') != string::npos) {
                     showLog(5);
-                    cout << "[!] Error: Multiple values entered, please enter a single number." << endl << endl;
-                    continue;
-                }
-                
-                // Non-numeric values (allow minus sign and decimal point)
-                if (input.find_first_not_of("0123456789.-") != string::npos) {
-                    showLog(5);
-                    cout << "[!] Error: Non-numeric character found, please enter numbers and decimal point only." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bener sih angka doang, tapi gabole multiple input yaa..." << endl << endl;
                     continue;
                 }
                 
                 // Multiple decimal points
                 if (count(input.begin(), input.end(), '.') > 1) {
                     showLog(5);
-                    cout << "[!] Error: Multiple decimal points found, please enter a valid decimal number." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Desimal titiknya cuma satu yaa..." << endl << endl;
                     continue;
                 }
-                
-                // Regex pattern for a valid decimal number (including negative numbers)
-                if (!regex_match(input, regex("^-?[0-9]+(\\.[0-9]+)?$"))) {
-                    showLog(5);
-                    cout << "[!] Error: Invalid format, please enter a valid decimal number." << endl << endl;
-                    continue;
-                }
-                
+
                 // Valid range
-                percentValue = stod(input);
-                if (percentValue < 0.0 || percentValue > 1.0) {
+                try {
+                    percentValue = stod(input);
+                    
+                    
+                    if (percentValue < 0.0 || percentValue > 1.0) {
+                        showLog(5);
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Bolehnya di rentang ";
+                        cout << RESET BRIGHT_CYAN << "0.0" << BRIGHT_WHITE ITALIC << " sampai " << RESET BRIGHT_CYAN << "1.0" << BRIGHT_WHITE ITALIC << " aja yaa." << endl << endl;
+                        continue;
+                    }
+                    
+                    isValid = true;
+                } 
+                catch (const std::out_of_range& e) {
                     showLog(5);
-                    cout << "[!] Error: Invalid percentage, please enter a number between 0.0 and 1.0." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar atau terlalu kecil." << endl << endl;
+                    continue;
+                } 
+                catch (const std::invalid_argument& e) {
+                    showLog(5);
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format angkanya salah, coba lagi yaa." << endl << endl;
                     continue;
                 }
-                
-                isValid = true;
             }
             
-            this -> targetPercentage = percentValue;
-        }
+            this->targetPercentage = percentValue;
+}
 
         void validateOutputPath() {
             string path;
@@ -406,23 +440,20 @@ class Input {
             showLog(6);
             
             while (!isValidPath) {
-                cout << "[?] Enter image output path, output extension must be the same as input." << endl;
-                cout << "[-] Example: D:\\something_out." << inputExtension << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;               
                 getline(cin, path);
                 
                 // Empty input
                 if (path.empty()) {
                     showLog(6);
-                    cout << "[!] Error: Empty input, please enter a path." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
                 // Valid path
                 if (!validatePath(path)) {
                     showLog(6);
-                    cout << "[!] Error: Invalid path format or directory does not exist." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
                     continue;
                 }
                 
@@ -430,13 +461,14 @@ class Input {
                 extension = getExtension(path);
                 if (extension.empty()) {
                     showLog(6);
-                    cout << "[!] Error: No file extension found, please include the file extension." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Jangan lupa extensionnya yaa... udah gede loh" << endl << endl;
                     continue;
                 }
 
                 if (extension != inputExtension) {
                     showLog(6);
-                    cout << "[!] Error: Invalid file format, only jpg, jpeg, and png formats are supported." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Extensionnya ga sesuai sama input-nya harusnya ";
+                    cout << RESET BRIGHT_GREEN << inputExtension << BRIGHT_WHITE ITALIC << ", coba lagi yaa..." << endl << endl;
                     continue;
                 }
                 
@@ -447,22 +479,25 @@ class Input {
                     
                     while (!validResponse) {
                         cout << endl;
-                        cout << "[!] Warning: Output file is identical to input file. This will overwrite your original image." << endl;
-                        cout << "[?] Do you want to continue? (Y/N): ";
-                        cout << endl << ">>  ";
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Warning: Output file bakal overwrite input file." << endl;
+                        cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Yakin ga nih? " << RESET BRIGHT_WHITE << "[";
+                        cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE << "/" << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "]" << endl;
+                        cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;            
                         
                         string response;
                         getline(cin, response);
                         
                         if (response.empty()) {
                             showLog(6);
-                            cout << "[!] Error: Empty input. Please enter Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, pls enter ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                             continue;
                         }
                         
                         if (response.length() != 1) {
                             showLog(6);
-                            cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                             continue;
                         }
                         
@@ -472,13 +507,10 @@ class Input {
                         } 
                         else {
                             showLog(6);
-                            cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
+                            continue;
                         }
-                    }
-                    
-                    if (tolower(confirm) != 'y') {
-                        showLog(6);
-                        continue;
                     }
                 }
 
@@ -491,22 +523,26 @@ class Input {
                         
                         while (!validResponse) {
                             cout << endl;
-                            cout << "[!] Warning: " << getInputExtension() << " file already exists at this location. This will overwrite the existing file." << endl;
-                            cout << "[?] Do you want to continue? (Y/N): ";
-                            cout << endl << ">>  ";
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Warning: ";
+                            cout << RESET BRIGHT_GREEN << "." << getInputExtension() << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite." << endl;
+                            cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Yakin ga nih? " << RESET BRIGHT_WHITE << "[";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE << "/" << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "]" << endl;
+                            cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;            
                             
                             string response;
                             getline(cin, response);
                             
                             if (response.empty()) {
                                 showLog(6);
-                                cout << "[!] Error: Empty input. Please enter Y or N." << endl << endl;
+                                cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, pls enter ";
+                                cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                                 continue;
                             }
                             
                             if (response.length() != 1) {
                                 showLog(6);
-                                cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                                cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                                cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                                 continue;
                             }
                             
@@ -516,13 +552,10 @@ class Input {
                             } 
                             else {
                                 showLog(6);
-                                cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                                cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                                cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
+                                continue;
                             }
-                        }
-                        
-                        if (tolower(confirm) != 'y') {
-                            showLog(6);
-                            continue;
                         }
                     }
                 }
@@ -540,23 +573,20 @@ class Input {
             showLog(7);
             
             while (!isValidPath) {
-                cout << "[?] Enter gif output path" << endl;
-                cout << "[-] Example: D:\\something_out.gif" << endl;
-                cout << endl << ">>  ";
-                
+                cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;               
                 getline(cin, path);
-                
+
                 // Empty input
                 if (path.empty()) {
                     showLog(7);
-                    cout << "[!] Error: Empty input, please enter a path." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, coba lagi ya bang :D" << endl << endl;
                     continue;
                 }
                 
                 // Valid path
                 if (!validatePath(path)) {
                     showLog(7);
-                    cout << "[!] Error: Invalid path format or directory does not exist." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
                     continue;
                 }
                 
@@ -564,13 +594,14 @@ class Input {
                 extension = getExtension(path);
                 if (extension.empty()) {
                     showLog(7);
-                    cout << "[!] Error: No file extension found, please include the file extension." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Jangan lupa extensionnya yaa... udah gede loh" << endl << endl;
                     continue;
                 }
 
                 if (extension != "gif") {
                     showLog(7);
-                    cout << "[!] Error: Invalid file format, only jpg, jpeg, and png formats are supported." << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Extensionnya harusnya ";
+                    cout << RESET BRIGHT_GREEN << ".gif" << RESET BRIGHT_WHITE ITALIC << " ya bang..." << endl << endl;
                     continue;
                 }
                 
@@ -582,22 +613,26 @@ class Input {
                     
                     while (!validResponse) {
                         cout << endl;
-                        cout << "Warning: GIF file already exists. This will overwrite the existing file." << endl;
-                        cout << "[?] Do you want to continue? (Y/N): ";
-                        cout << endl << ">>  ";
+                        cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Warning: ";
+                        cout << RESET BRIGHT_GREEN << ".gif" << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite" << endl;
+                        cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Yakin ga nih? " << RESET BRIGHT_WHITE << "[";
+                        cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE << "/" << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "]" << endl;
+                        cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                         
                         string response;
                         getline(cin, response);
                         
                         if (response.empty()) {
                             showLog(7);
-                            cout << "[!] Error: Empty input. Please enter Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Classic empty input, pls enter ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                             continue;
                         }
                         
                         if (response.length() != 1) {
                             showLog(7);
-                            cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
                             continue;
                         }
                         
@@ -607,16 +642,11 @@ class Input {
                         } 
                         else {
                             showLog(7);
-                            cout << "[!] Error: Invalid input. Please enter only Y or N." << endl << endl;
+                            cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Invalid input, pls enter hanya ";
+                            cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE ITALIC << " atau " << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "." << endl << endl;
+                            continue;
                         }
                     }
-                    
-                    if (tolower(confirm) != 'y') {
-                        showLog(7);
-                        continue;
-                    }
-                    
-                    cout << "[!] Existing GIF file will be overwritten." << endl;
                 }
                 
                 isValidPath = true;
@@ -628,90 +658,131 @@ class Input {
         void showLog(int step)
         {
             cout << CLEAR_SCREEN;
-            cout << "Quadpressor ~ made with love by FaRzi" << endl;
-            cout << endl << "~ Tasks ~" << endl;
+            cout << ITALIC MAGENTA << "Quadpressor" << BRIGHT_WHITE << " ~ made with " << BRIGHT_RED << "love " << BRIGHT_WHITE << "by " << BRIGHT_CYAN << "FaRzi" << BRIGHT_WHITE << " :D" << endl;
+            cout << endl << "~ " << BRIGHT_YELLOW << "Tasks" << BRIGHT_WHITE << " ~" << endl;
 
-            if (step == 1) cout << "[1/7] Getting input path..." << endl;
+            if (step == 1) 
+            {
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Getting input path..." << endl;
+                cout << endl;
+
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image input path, supported formats: ";
+                cout << RESET BRIGHT_GREEN << "jpg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "jpeg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "png" << BRIGHT_WHITE << "." << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_in.jpg" << endl;
+            }
 
             else if (step == 2) 
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Getting Error Method..." << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Getting Error Method..." << endl;
+                cout << endl;
+
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter mode:" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 1 " << BRIGHT_RED << "~" << RESET ITALIC << " Variance" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 2 " << BRIGHT_RED << "~" << RESET ITALIC << " Mean Absolute Deviation (MAD)" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 3 " << BRIGHT_RED << "~" << RESET ITALIC << " Max Pixel Difference (MPD)" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 4 " << BRIGHT_RED << "~" << RESET ITALIC << " Entropy" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 5 " << BRIGHT_RED << "~" << RESET ITALIC << " Structural Similarity Index (SSIM)" << endl;
             }
 
             else if (step == 3)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Getting threshold..." << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Getting threshold..." << endl;
+                cout << endl;
+
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter threshold " << RESET BRIGHT_CYAN << "(" << lowerThreshold << " - " << upperThreshold << ")" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << (lowerThreshold + upperThreshold) / 2 << endl;
             }
 
             else if (step == 4)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Threshold: " << threshold << endl;
-                cout << "[4/7] Getting minimum block size..." << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Getting minimum block size..." << endl;
+                cout << endl;
+                
+                int maxBlockSize = imgWidth * imgHeight;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter minimum block size, must not exceed the image area ";
+                cout << RESET BRIGHT_CYAN << "(" << maxBlockSize << " px)" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << "8" << endl;
             }
             else if (step == 5)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Threshold: " << threshold << endl;
-                cout << "[4/7] Minimum Block Size: " << minBlock << endl;
-                cout << "[5/7] Getting target percentage..." << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
+                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Getting target percentage..." << endl;
+                cout << endl;
+                
+                
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter target percentage as a decimal " << RESET BRIGHT_CYAN << "(0.0 - 1.0 where 1.0 = 100%)" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: ";
+                cout << RESET MAGENTA << 0.85 << BRIGHT_WHITE ITALIC << " for " << RESET MAGENTA << "85%" << endl;
             }
             else if (step == 6)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Threshold: " << threshold << endl;
-                cout << "[4/7] Minimum Block Size: " << minBlock << endl;
-                cout << "[5/7] Target Percentage: " << targetPercentage * 100.0f << " %";
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
+                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
 
-                if (targetPercentage == 0) cout << " (disabled)" << endl;
-                else cout << endl;
+                if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
+                else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
 
-                cout << "[6/7] Getting output path..."<<endl; 
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Getting output path..."<<endl;
+                cout << endl;
+
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image output path, output extension must be the same as input." << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.jpg" << endl;
             }
+
             else if (step == 7)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Threshold: " << threshold << endl;
-                cout << "[4/7] Minimum Block Size: " << minBlock << endl;
-                cout << "[5/7] Target Percentage: " << targetPercentage * 100.0f << " %";
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
+                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
 
-                if (targetPercentage == 0) cout << " (disabled)" << endl;
-                else cout << endl;
+                if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
+                else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
 
-                cout << "[6/7] Output Path: " << outputPath << endl;
-                cout << "[7/7] Getting gif path..." << endl;
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPath << endl;
+                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " Getting gif path..." << endl;
+                cout << endl;
+
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter gif output path" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.gif" << endl;
             }
 
             else if (step == 8)
             {
-                cout << "[1/7] Image: " << getFilename(inputPath) << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB. Path: " << inputPath << endl;
-                cout << "[2/7] Error Method Measurement: " << errorMethod << endl;
-                cout << "[3/7] Threshold: " << threshold << endl;
-                cout << "[4/7] Minimum Block Size: " << minBlock << endl;
-                cout << "[5/7] Target Percentage: " << targetPercentage * 100.0f << " %";
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
+                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
 
-                if (targetPercentage == 0) cout << " (disabled)" << endl;
-                else cout << endl;
+                if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
+                else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
 
-                cout << "[6/7] Output Path: " << outputPath << endl;
-                cout << "[7/7] GIF Path: " << gifPath << endl;
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPath << endl;
+                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " GIF Path: " << RESET MAGENTA << gifPath << endl;
             }
 
-            cout << endl;
+            cout << RESET << endl;
         }
 
     public:
@@ -724,7 +795,7 @@ class Input {
             validateTargetPercentage();
             validateOutputPath();
             validateGifPath();      
-            showLog(8);      
+            showLog(8); 
         }
         
         ~Input() {}
