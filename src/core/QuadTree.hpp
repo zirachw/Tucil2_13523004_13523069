@@ -43,7 +43,7 @@ class QuadTree {
                     data[outIdx + 2] = currImgData[idx + 2];
                     
                     if (inputExtension == "png") {
-                        data[outIdx + 3] = 255;
+                        data[outIdx + 3] = currImgData[idx + 3];
                     } 
                     else {
                         data[outIdx + 3] = 255;
@@ -65,7 +65,7 @@ class QuadTree {
                     data[outIdx + 2] = tempImgData[idx + 2];
 
                     if (inputExtension == "png") {
-                        data[outIdx + 3] = 255;
+                        data[outIdx + 3] = currImgData[idx + 3];
                     } 
                     else {
                         data[outIdx + 3] = 255;
