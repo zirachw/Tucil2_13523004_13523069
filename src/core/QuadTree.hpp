@@ -2,7 +2,7 @@
 #define QUADTREE_HPP
 
 #include <queue>
-#include <time>
+#include <time.h>
 #include "QuadTreeNode.hpp"
 
 // Global variables for image data
@@ -112,22 +112,19 @@ class QuadTree {
             this -> outputPath = outputPath;
             this -> gifPath = gifPath;
             this -> inputExtension = inputExtension;
-
-            root = QuadTreeNode(0, 0, 0, imgWidth, imgHeight, mode);
+            this -> root = QuadTreeNode(0, 0, 0, imgWidth, imgHeight, mode);
             
             if (targetPercentage == 0) lastImg = true;
             else lastImg = false;
 
             char* gifPathCopy = new char[gifPath.length() + 1];
             strcpy(gifPathCopy, gifPath.c_str());
-
             GifBegin(&g, gifPathCopy, imgWidth, imgHeight, 50);
-            data = (uint8_t*) malloc (imgWidth * imgHeight * 4);
 
-            initialSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
-            startTime = clock();
-
-            quadtreeNode = 0;
+            this -> data = (uint8_t*) malloc (imgWidth * imgHeight * 4);
+            this -> initialSize = Image::getOriginalSize(inputPath);
+            this -> startTime = clock();
+            this -> quadtreeNode = 0;
         }
     
         ~QuadTree() {
