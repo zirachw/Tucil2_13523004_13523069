@@ -8,8 +8,11 @@
 #include "../libs/stb_image.h"
 #include "../libs/stb_image_write.h"
 #include <vector>
-#include <iomanip>  // For std::fixed and std::setprecision
+#include <iomanip>
+#include <string>
+#include <algorithm>
 
+// Global variables for image data
 extern unsigned char* currImgData;
 extern unsigned char* initImgData;
 extern unsigned char* tempImgData;
@@ -20,26 +23,35 @@ using namespace std;
 class Image {
     
     public:
-        // Callback function to count bytes without storing them
-        static void count_bytes(void *context, void *data, int size) {
-            (void)data; // Unused parameter
+        static void getBytes(void *context, void *data, int size) {
+            (void)data;
             size_t *total = reinterpret_cast<size_t *>(context);
             *total += static_cast<size_t>(size);
         }
 
-        static size_t getEncodedSize(unsigned char* image, int w, int h) {
-            // Use the count_bytes callback instead of storing data
+        static size_t getEncodedSize(unsigned char* image, int w, int h, const string& extension, int channels = 3) {
+
             size_t totalBytes = 0;
-            stbi_write_jpg_to_func(count_bytes, &totalBytes, w, h, 3, image, 90);
+            if (extension == "png") {
+                stbi_write_png_to_func(getBytes, &totalBytes, w, h, channels, image, w * channels);
+            } 
+            else {
+                stbi_write_jpg_to_func(getBytes, &totalBytes, w, h, channels, image, 90);
+            }
+            
             return totalBytes;
         }
 
-        static size_t getOriginalSize(string path) {
+        static size_t getEncodedSize(unsigned char* image, int w, int h) {
+            // Default to jpg for backward compatibility
+            return getEncodedSize(image, w, h, "jpg");
+        }
 
+        static size_t getOriginalSize(string path) {
             FILE* file = fopen(path.c_str(), "rb");
             if (!file) {
                 cout << "Could not open the image file\n";
-                return false;
+                return 0;
             }
             
             // Get original file size
@@ -54,23 +66,28 @@ class Image {
             return static_cast<double>(sizeInBytes) / 1024.0;
         }
 
-        static bool loadImage(string path, string extension) {
+        static string loadImage(string path, string extension) {
+            
+            currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 0);
 
-            // Load the image
-            currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 3);
-            if (!currImgData) {
-                cout << "Could not load the image data\n";
-                return false;
+            if (imgChannels < 3) {
+                return "Image must have at least 3 channels (RGB), found " + to_string(imgChannels) + " channels.";
             }
-        
-            imgChannels = 3;
-            initImgData = (unsigned char*) malloc (imgWidth * imgHeight * 3);
+
+            bool isPng = (extension == "png");
+            imgChannels = isPng ? 4 : 3;
+            
+            if (!currImgData) {
+                return "Failed to load image, please try again.";
+            }
+            
+            initImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
             memcpy(initImgData, currImgData, imgWidth * imgHeight * 3);
         
-            tempImgData = (unsigned char*) malloc (imgWidth * imgHeight * 3);
-            memcpy(tempImgData, currImgData, imgWidth * imgHeight * 3);
+            tempImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
+            memcpy(tempImgData, currImgData, imgWidth * imgHeight * imgChannels);
 
-            return true;
+            return "";
         }
 };
 

@@ -2,9 +2,10 @@
 #define QUADTREE_HPP
 
 #include <queue>
+#include <time>
 #include "QuadTreeNode.hpp"
-#include <time.h>
 
+// Global variables for image data
 extern unsigned char* currImgData; 
 extern unsigned char* initImgData;  
 extern unsigned char* tempImgData;
@@ -15,7 +16,7 @@ class QuadTree {
     private:
         int mode, minBlock;
         double threshold, targetPercentage;
-        string inputPath, outputPath, gifPath;
+        string inputPath, inputExtension, outputPath, gifPath;
 
         bool lastImg;
         QuadTreeNode root;
@@ -40,7 +41,13 @@ class QuadTree {
                     data[outIdx + 0] = currImgData[idx + 0];
                     data[outIdx + 1] = currImgData[idx + 1];
                     data[outIdx + 2] = currImgData[idx + 2];
-                    data[outIdx + 3] = 255;
+                    
+                    if (inputExtension == "png") {
+                        data[outIdx + 3] = currImgData[idx + 3];
+                    } 
+                    else {
+                        data[outIdx + 3] = 255;
+                    }
                 }
             }
 
@@ -56,7 +63,13 @@ class QuadTree {
                     data[outIdx + 0] = tempImgData[idx + 0];
                     data[outIdx + 1] = tempImgData[idx + 1];
                     data[outIdx + 2] = tempImgData[idx + 2];
-                    data[outIdx + 3] = 255;
+
+                    if (inputExtension == "png") {
+                        data[outIdx + 3] = tempImgData[idx + 3];
+                    } 
+                    else {
+                        data[outIdx + 3] = 255;
+                    }
                 }
             }
 
@@ -64,16 +77,32 @@ class QuadTree {
         }
 
         void writeCurrImage(string path) const {
-            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, currImgData, 80);
+
+            if (!path.empty()) {
+                if (inputExtension == "png") {
+                    stbi_write_png(path.c_str(), imgWidth, imgHeight, 4, currImgData, imgWidth * imgChannels);
+                } 
+                else {
+                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, currImgData, 90);
+                }
+            }
         }
-        
+    
         void writeTempImage(string path) const {
-            stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, 80);
+
+            if (!path.empty()) {
+                if (inputExtension == "png") {
+                    stbi_write_png(path.c_str(), imgWidth, imgHeight, 4, tempImgData, imgWidth * imgChannels);
+                } 
+                else {
+                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, 90);
+                }
+            }
         }
   
         
     public:
-        QuadTree(string inputPath, int mode, double threshold, int minBlock, double targetPercentage, string outputPath, string gifPath) {
+        QuadTree(string inputPath, int mode, double threshold, int minBlock, double targetPercentage, string outputPath, string gifPath, string inputExtension) {
             
             this -> inputPath = inputPath;
             this -> mode = mode;
@@ -82,6 +111,7 @@ class QuadTree {
             this -> targetPercentage = targetPercentage;
             this -> outputPath = outputPath;
             this -> gifPath = gifPath;
+            this -> inputExtension = inputExtension;
 
             root = QuadTreeNode(0, 0, 0, imgWidth, imgHeight, mode);
             
@@ -92,9 +122,9 @@ class QuadTree {
             strcpy(gifPathCopy, gifPath.c_str());
 
             GifBegin(&g, gifPathCopy, imgWidth, imgHeight, 50);
-            data = (uint8_t*)malloc(imgWidth * imgHeight * 4);
+            data = (uint8_t*) malloc (imgWidth * imgHeight * 4);
 
-            initialSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
+            initialSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
             startTime = clock();
 
             quadtreeNode = 0;
@@ -102,7 +132,7 @@ class QuadTree {
     
         ~QuadTree() {
             if (data != nullptr) {
-                delete[] data;
+                free(data);
                 data = nullptr;
             }
         }
@@ -111,7 +141,7 @@ class QuadTree {
             queue<QuadTreeNode> q;
             q.push(root);
             int curMaxStep = 0;
-            memcpy(tempImgData, currImgData, imgWidth * imgHeight * 3);
+            memcpy(tempImgData, currImgData, imgWidth * imgHeight * imgChannels);
 
             while (!q.empty()) {
                 QuadTreeNode node = q.front();
@@ -132,7 +162,7 @@ class QuadTree {
                     quadtreeDepth = step;
                     curMaxStep = step;
                     writeTempImageToGif();
-                    memcpy(tempImgData, currImgData, width * height * 3);
+                    memcpy(tempImgData, currImgData, width * height * imgChannels);
                 }
 
                 if (width == 0 || height == 0 || min(node.getWidth(), node.getHeight()) < minBlock || node.getError() <= threshold) {
@@ -158,7 +188,7 @@ class QuadTree {
                 writeCurrImage(outputPath);
                 
                 endTime = clock();  
-                finalSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
+                finalSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
                 compressionPercentage = ((double)(initialSize - finalSize) / initialSize) * 100.0;
 
                 GifEnd(&g);
@@ -217,7 +247,7 @@ class QuadTree {
                 threshold = mid;
                 performQuadTree();
     
-                size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight);
+                size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
 
                 // cout << "threshold : " << mid << " size : " << currentImageSize << endl;
 
@@ -258,8 +288,6 @@ class QuadTree {
         int getFinalSize() const {
             return finalSize;
         }
-
-
 };
 
 #endif
