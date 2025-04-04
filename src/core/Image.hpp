@@ -82,7 +82,7 @@ class Image {
             }
             
             initImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
-            memcpy(initImgData, currImgData, imgWidth * imgHeight * 3);
+            memcpy(initImgData, currImgData, imgWidth * imgHeight * imgChannels);
         
             tempImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
             memcpy(tempImgData, currImgData, imgWidth * imgHeight * imgChannels);
