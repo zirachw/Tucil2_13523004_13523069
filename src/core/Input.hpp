@@ -20,7 +20,10 @@ class Input {
 
         int mode, minBlock;
         double threshold, upperThreshold, lowerThreshold, targetPercentage;
-        string inputPath, inputExtension, errorMethod, outputPath, gifPath;
+        string inputPath, inputPathDisplay;
+        string outputPath, outputPathDisplay;
+        string gifPath, gifPathDisplay;
+        string inputExtension, errorMethod;
 
         // Helper function to extract filename with extension from a path
         string getFilename(const string& path) {
@@ -40,40 +43,128 @@ class Input {
             return "";
         }
         
+        // Method to convert WSL paths to Windows paths
+        string convertPath(const string& originalPath) {
+            // Check if it's a WSL path
+            if (originalPath.length() >= 6 && originalPath.substr(0, 5) == "/mnt/" && 
+                isalpha(originalPath[5]) && (originalPath.length() == 6 || originalPath[6] == '/')) {
+                
+                // Get drive letter
+                char driveLetter = originalPath[5];
+                
+                // Create Windows-style path
+                string windowsPath = string(1, toupper(driveLetter)) + ":";
+                
+                // Add the rest of the path, replacing forward slashes with backslashes
+                if (originalPath.length() > 6) {
+                    string restOfPath = originalPath.substr(6);
+                    
+                    // Replace all forward slashes with backslashes
+                    for (char& c : restOfPath) {
+                        if (c == '/') {
+                            c = '\\';
+                        }
+                    }
+                    
+                    windowsPath += restOfPath;
+                } else {
+                    // Just the drive root
+                    windowsPath += "\\";
+                }
+                
+                return windowsPath;
+            }
+            
+            // Not a WSL path, return unchanged
+            return originalPath;
+        }
+
         // Check if the path is a fully qualified path (has drive letter and directory structure)
-        // For Windows, check for drive letter format (e.g., "D:\...")
-        bool validatePath(const string& path) {
-            if (path.length() < 3 || path[1] != ':' || (path[2] != '\\' && path[2] != '/')) {
-                return false;
-            }
-            
-            // Extract directory part from the path
-            size_t lastSlash = path.find_last_of("/\\");
-            if (lastSlash == string::npos) { 
-                return false;
-            }
-            
-            // For root directory (e.g., "D:\file.jpeg"), the directory is "D:\"
+        string validatePath(const string& path) {
             string directory;
-            if (lastSlash <= 2) {
-                directory = path.substr(0, 3);  // Take "D:\"
-            } 
+            
+            // Check if it's a WSL-mounted Windows drive path
+            if (path.length() >= 6 && path.substr(0, 5) == "/mnt/" && isalpha(path[5]) && 
+                (path.length() == 6 || path[6] == '/')) {
+                
+                // Validate basic WSL path format
+                char driveLetter = toupper(path[5]);
+                
+                // Make sure the drive letter is valid (typically A-Z)
+                if (driveLetter < 'A' || driveLetter > 'Z') {
+                    return "Drive tidak valid. Gunakan drive letter yang benar (A-Z).";
+                }
+                
+                // Convert to Windows path
+                string windowsPath = convertPath(path);
+                
+                // Extract directory part from the Windows path
+                size_t lastSlash = windowsPath.find_last_of("\\");
+                
+                if (lastSlash == string::npos) { 
+                    return "Format path-nya salah bang.";
+                }
+                
+                // Set directory to the Windows path's directory part
+                if (lastSlash <= 2) {
+                    directory = windowsPath.substr(0, 3);  // Take "D:\" or similar
+                } else {
+                    directory = windowsPath.substr(0, lastSlash); // Subdirectory
+                }
+            }
+            // UNIX path validation
+            else if (path.length() > 0 && path[0] == '/') {
+                // Extract directory part from the path
+                size_t lastSlash = path.find_last_of("/");
+                
+                if (lastSlash == string::npos) { 
+                    return "Format path-nya salah bang.";
+                }
+                
+                // Handle root directory case
+                if (lastSlash == 0) {
+                    directory = "/"; // Root directory
+                } else {
+                    directory = path.substr(0, lastSlash);
+                }
+            }
+            // Windows path validation
+            else if (path.length() >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/')) {
+                // Extract directory part from the path
+                size_t lastSlash = path.find_last_of("/\\");
+                
+                if (lastSlash == string::npos) { 
+                    return "Format path-nya salah bang.";
+                }
+                
+                // Handle Windows root directory case
+                if (lastSlash <= 2) {
+                    directory = path.substr(0, 3);  // Take "D:\" or "D:/"
+                } else {
+                    directory = path.substr(0, lastSlash); // This is a file in a subdirectory
+                }
+            }
             else {
-                directory = path.substr(0, lastSlash); // This is a file in a subdirectory
+                return "Format path-nya salah bang.";
             }
             
-            // Directory exists or not?
+            // Directory exists or not? (common check for all path types)
             struct stat info;
             if (stat(directory.c_str(), &info) != 0) {
-                return false;
+                return "Direktorinya engga ada, coba tambahin dulu deh";
             }
-
+        
             // Is it a directory?
-            return (info.st_mode & S_IFDIR) != 0;  
+            if (!(info.st_mode & S_IFDIR)) {
+                return "Format path-nya salah bang.";
+            }
+            
+            return ""; // Empty string means valid path
         }
 
         void validateInputPath() {
             string path;
+            string convertedPath;
             string extension;
             bool isValidFile = false;
             vector<string> allowedExtensions = {"jpg", "jpeg", "png"};
@@ -83,6 +174,7 @@ class Input {
                 cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
                 getline(cin, path);
                 
+
                 // Empty input
                 if (path.empty()) {
                     showLog(1);
@@ -91,9 +183,10 @@ class Input {
                 }
                 
                 // Valid path
-                if (!validatePath(path)) {
+                string pathError = validatePath(path);
+                if (!pathError.empty()) {
                     showLog(1);
-                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: " << pathError << endl << endl;
                     continue;
                 }
                 
@@ -113,8 +206,10 @@ class Input {
                     continue;
                 }
                 
+                convertedPath = convertPath(path);
+
                 // File exists
-                ifstream file(path);
+                ifstream file(convertedPath);
                 if (!file) {
                     showLog(1);
                     cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Ga ada file image-nya bang, lupa taroh ya?" << endl << endl;
@@ -122,8 +217,8 @@ class Input {
                 }
                 
                 // Load image
-                string errorMsg = Image::loadImage(path, extension);
-                if (errorMsg != "") {
+                string errorMsg = Image::loadImage(convertedPath, extension);
+                if (!errorMsg.empty()) {
                     showLog(1);
                     cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: " << errorMsg << endl << endl;
                     continue;
@@ -132,7 +227,8 @@ class Input {
                 isValidFile = true;
             }
             
-            this -> inputPath = path;
+            this -> inputPathDisplay = path;
+            this -> inputPath = convertedPath; 
             this -> inputExtension = extension;
         }
 
@@ -451,9 +547,10 @@ class Input {
                 }
                 
                 // Valid path
-                if (!validatePath(path)) {
+                string pathError = validatePath(path);
+                if (!pathError.empty()) {
                     showLog(6);
-                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: " << pathError << endl << endl;
                     continue;
                 }
                 
@@ -563,7 +660,8 @@ class Input {
                 isValidPath = true;
             }
             
-            this -> outputPath = path;
+            this -> outputPathDisplay = path;
+            this -> outputPath = convertPath(path);
         }
 
         void validateGifPath() {
@@ -584,9 +682,10 @@ class Input {
                 }
                 
                 // Valid path
-                if (!validatePath(path)) {
+                string pathError = validatePath(path);
+                if (!pathError.empty()) {
                     showLog(7);
-                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Format path-nya salah bang" << endl << endl;
+                    cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: " << pathError << endl << endl;
                     continue;
                 }
                 
@@ -652,7 +751,8 @@ class Input {
                 isValidPath = true;
             }
             
-            this -> gifPath = path;
+            this -> gifPathDisplay = path;
+            this -> gifPath = convertPath(path);
         }
 
         void showLog(int step)
@@ -660,24 +760,24 @@ class Input {
             cout << CLEAR_SCREEN;
             cout << ITALIC MAGENTA << "Quadpressor" << BRIGHT_WHITE << " ~ made with " << BRIGHT_RED << "love " << BRIGHT_WHITE << "by " << BRIGHT_CYAN << "FaRzi" << BRIGHT_WHITE << " :D" << endl;
             cout << endl << "~ " << BRIGHT_YELLOW << "Tasks" << BRIGHT_WHITE << " ~" << endl;
-
+        
             if (step == 1) 
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Getting input path..." << endl;
                 cout << endl;
-
+        
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image input path, supported formats: ";
                 cout << RESET BRIGHT_GREEN << "jpg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "jpeg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "png" << BRIGHT_WHITE << "." << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_in.jpg" << endl;
             }
-
+        
             else if (step == 2) 
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Getting Error Method..." << endl;
                 cout << endl;
-
+        
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter mode:" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 1 " << BRIGHT_RED << "~" << RESET ITALIC << " Variance" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 2 " << BRIGHT_RED << "~" << RESET ITALIC << " Mean Absolute Deviation (MAD)" << endl;
@@ -685,23 +785,23 @@ class Input {
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 4 " << BRIGHT_RED << "~" << RESET ITALIC << " Entropy" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 5 " << BRIGHT_RED << "~" << RESET ITALIC << " Structural Similarity Index (SSIM)" << endl;
             }
-
+        
             else if (step == 3)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
-                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Getting threshold..." << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Getting threshold..." << endl;
                 cout << endl;
-
+        
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter threshold " << RESET BRIGHT_CYAN << "(" << lowerThreshold << " - " << upperThreshold << ")" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << (lowerThreshold + upperThreshold) / 2 << endl;
             }
-
+        
             else if (step == 4)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Getting minimum block size..." << endl;
@@ -714,8 +814,8 @@ class Input {
             }
             else if (step == 5)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
@@ -729,59 +829,59 @@ class Input {
             }
             else if (step == 6)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
-
+        
                 if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
                 else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
-
+        
                 cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Getting output path..."<<endl;
                 cout << endl;
-
+        
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image output path, output extension must be the same as input." << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.jpg" << endl;
             }
-
+        
             else if (step == 7)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
-
+        
                 if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
                 else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
-
-                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPath << endl;
+        
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " Getting gif path..." << endl;
                 cout << endl;
-
+        
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter gif output path" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.gif" << endl;
             }
-
+        
             else if (step == 8)
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPath) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
-                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPath << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
+                cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
                 cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
-
+        
                 if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
                 else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
-
-                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPath << endl;
-                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " GIF Path: " << RESET MAGENTA << gifPath << endl;
+        
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPathDisplay << endl;
+                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " GIF Path: " << RESET MAGENTA << gifPathDisplay << endl;
             }
-
+        
             cout << RESET << endl;
         }
 
