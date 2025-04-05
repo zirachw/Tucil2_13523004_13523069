@@ -68,6 +68,8 @@ A simple interactive **CLI** written in `C++` that implements the **Divide and C
 
 ## 🛠️ How To Run
 
+https://github.com/user-attachments/assets/c00084c6-e5fd-494e-a817-b10ed780e820
+
 ### 🪟 Windows
 ```bash
 git clone https://github.com/zirachw/Tucil2_13523004_13523069.git
