@@ -42,7 +42,7 @@ class QuadTree {
                     data[outIdx + 1] = currImgData[idx + 1];
                     data[outIdx + 2] = currImgData[idx + 2];
                     
-                    if (inputExtension == "png") {
+                    if (imgChannels == 4) {
                         data[outIdx + 3] = currImgData[idx + 3];
                     } 
                     else {
@@ -64,7 +64,7 @@ class QuadTree {
                     data[outIdx + 1] = tempImgData[idx + 1];
                     data[outIdx + 2] = tempImgData[idx + 2];
 
-                    if (inputExtension == "png") {
+                    if (imgChannels == 4) {
                         data[outIdx + 3] = currImgData[idx + 3];
                     } 
                     else {
@@ -80,10 +80,10 @@ class QuadTree {
 
             if (!path.empty()) {
                 if (inputExtension == "png") {
-                    stbi_write_png(path.c_str(), imgWidth, imgHeight, 4, currImgData, imgWidth * imgChannels);
+                    stbi_write_png(path.c_str(), imgWidth, imgHeight, imgChannels, currImgData, imgWidth * imgChannels);
                 } 
                 else {
-                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, currImgData, 90);
+                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, imgChannels, currImgData, 90);
                 }
             }
         }
@@ -246,7 +246,7 @@ class QuadTree {
     
                 size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
 
-                // cout << "threshold : " << mid << " size : " << currentImageSize << endl;
+                cout << "threshold : " << mid << " size : " << currentImageSize << endl;
 
                 if (currentImageSize <= targetImageSize) {
                     bestThreshold = mid;
@@ -254,13 +254,19 @@ class QuadTree {
                 } 
                 else l = mid;
 
-                memcpy(currImgData, initImgData, imgWidth * imgHeight * 3);
+                memcpy(currImgData, initImgData, imgWidth * imgHeight * imgChannels);
+            }
+
+            if (bestThreshold == -1) {
+                bestThreshold = threshold;
             }
 
             lastImg = true;
             threshold = bestThreshold;
+            cout << "Best threshold found: " << bestThreshold << endl;
             performQuadTree();
-            // cout << "threshold : " << bestThreshold << " size : " << currentImageSize << endl;
+            size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
+            cout << "threshold : " << bestThreshold << " size : " << currentImageSize << endl;
         }
 
         int getQuadtreeDepth() const {

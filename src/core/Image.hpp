@@ -69,13 +69,12 @@ class Image {
         static string loadImage(string path, string extension) {
             
             currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 0);
-
+            
             if (imgChannels < 3) {
                 return "Image-nya harus ada minimal 3 channel (RGB), kok ini cuma " + to_string(imgChannels) + " channel doang.";
             }
 
             bool isPng = (extension == "png");
-            imgChannels = isPng ? 4 : 3;
             
             if (!currImgData) {
                 return "Image-nya gagal di-load, coba ulang ya...";
