@@ -1,111 +1,113 @@
 # 💡 Image Compression with Quadtree Method
-A simple interactive **CLI** in `C++` implements **Divide and Conquer** algorithm for compressing images using a **Quadtree**-based approach, integrating all user-specified parameters.
+
+A simple interactive **CLI** written in `C++` that implements the **Divide and Conquer** algorithm to compress images using a **Quadtree-based** approach. Supports various error calculation methods and user-defined parameters.
 
 ---
 
-<!-- CONTRIBUTOR -->
-<div align="center" id="contributor">
-  <strong>
-    <h3>~ gelatik kpn yh? 😓 ~</h3>
-    <table align="center">
-      <tr align="center">
-        <td>NIM</td>
-        <td>Nama</td>
-      </tr>
-      <tr align="center">
-        <td>13523004</td>
-        <td>Razi Rachman Widyadhana</td>
-      </tr>
-      <tr align="center">
-        <td>13523069</td>
-        <td>Mochammad Fariz Rifqi Rizqulloh</td>
-      </tr>
-    </table>
-  </strong>
-</div>
+## 👥 Contributors
 
 <div align="center">
-  <h3 align="center">~ Tech Stacks ~ </h3>
 
-  <p align="center">
-    
-[![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)][CPP-url]
-  
-  </p>
+### ~ Gelatik kapan yah? 😓 ~
+
+| NIM       | Name                               |
+|-----------|------------------------------------|
+| 13523004  | Razi Rachman Widyadhana            |
+| 13523069  | Mochammad Fariz Rifqi Rizqulloh    |
+
 </div>
 
 ---
 
- ## 📦 Installation & Setup
- 
- ### ✅ Requirements
- - Git
- - C++ Compiler
- 
- ### ⬇️ Installing Dependencies
- 
- #### 🪟 Windows
- 1. Git
-    Download and install Git from:  
-    [https://git-scm.com/download/win](https://git-scm.com/download/win)
-    
- 2. C++ Compiler
-    You can follow this tutorial : [https://code.visualstudio.com/docs/cpp/config-mingw](https://code.visualstudio.com/docs/cpp/config-mingw)
+## 🚀 Tech Stack
 
- <br/>
- <br/>
- 
- #### 🐧 Linux
- 1. Git
-       ```bash
-    sudo apt-get update
-    sudo apt-get install git
-    ```
- 2. C++ Compiler
-       ```bash
-    sudo apt-get update
-    sudo apt-get install build-essential
-    ```
- ---
- ## 🛠️ How To Run
- 
- ### **🪟 Windows**
-     ```bash
-    git clone https://github.com/zirachw/Tucil2_13523004_13523069.git
-    cd Tucil2_13523004_13523069/src
-    g++ -o main main.cpp
-    ./main
-     ```
- 
- ### **🐧 Linux (UNIX system)**
-    ```bash
-    git clone https://github.com/zirachw/Tucil2_13523004_13523069.git
-    cd Tucil2_13523004_13523069/src
-    g++ -o main main.cpp
-    ./main
-     ```
- ---
- ## 📱 Repository Structure
- ```
+<p align="center">
+  <a href="https://learn.microsoft.com/en-us/cpp/cpp/?view=msvc-170">
+    <img src="https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++ Badge">
+  </a>
+</p>
+
+---
+
+## 📆 Installation & Setup
+
+### ✅ Requirements
+- Git
+- C++ Compiler
+
+---
+
+### ⬇️ Installing Dependencies
+
+#### 🪟 Windows
+
+1. **Git**  
+   Download and install from:  
+   [https://git-scm.com/download/win](https://git-scm.com/download/win)
+
+2. **C++ Compiler**  
+   Follow this guide to install MinGW for VS Code:  
+   [https://code.visualstudio.com/docs/cpp/config-mingw](https://code.visualstudio.com/docs/cpp/config-mingw)
+
+---
+
+#### 🐧 Linux
+
+1. **Git**
+   ```bash
+   sudo apt-get update
+   sudo apt-get install git
+   ```
+
+2. **C++ Compiler**
+   ```bash
+   sudo apt-get install build-essential
+   ```
+
+---
+
+## 🛠️ How To Run
+
+### 🪟 Windows
+```bash
+git clone https://github.com/zirachw/Tucil2_13523004_13523069.git
+cd Tucil2_13523004_13523069/src
+g++ -o main main.cpp
+./main
+```
+
+### 🐧 Linux / UNIX
+```bash
+git clone https://github.com/zirachw/Tucil2_13523004_13523069.git
+cd Tucil2_13523004_13523069/src
+g++ -o main main.cpp
+./main
+```
+
+---
+
+## 📁 Repository Structure
+
+```
 Tucil2_13523004_13523069
 ├── README.md
 ├── bin
 ├── docs
 ├── src
-│   ├── core
-│   │   ├── ErrorMethods.hpp
-│   │   ├── Image.hpp
-│   │   ├── Input.hpp
-│   │   ├── QuadTree.hpp
-│   │   └── QuadTreeNode.hpp
-│   ├── libs
-│   │   ├── gif.h
-│   │   ├── stb_image.h
-│   │   ├── stb_image_write.h
-│   │   └── style.h
-│   └── main.cpp
+│   ├── core
+│   │   ├── ErrorMethods.hpp
+│   │   ├── Image.hpp
+│   │   ├── Input.hpp
+│   │   ├── QuadTree.hpp
+│   │   └── QuadTreeNode.hpp
+│   ├── libs
+│   │   ├── gif.h
+│   │   ├── stb_image.h
+│   │   ├── stb_image_write.h
+│   │   └── style.h
+│   └── main.cpp
 └── test
- ```
+```
  
  ---
  ## 📃 Miscellaneous
