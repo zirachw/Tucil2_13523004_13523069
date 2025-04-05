@@ -162,7 +162,7 @@ class QuadTree {
                     memcpy(tempImgData, currImgData, width * height * imgChannels);
                 }
 
-                if (width == 0 || height == 0 || min(node.getWidth(), node.getHeight()) < minBlock || node.getError() <= threshold) {
+                if (width == 0 || height == 0 || ((long long)node.getWidth() * (long long)node.getHeight()) < minBlock || node.getError() <= threshold) {
                     node.fillCurrRectangle();
                     if (lastImg) {
                         node.fillTempRectangle();
