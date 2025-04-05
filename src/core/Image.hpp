@@ -81,14 +81,14 @@ class Image {
             // Allocate memory for backup copies
             initImgData = (unsigned char*) malloc(imgWidth * imgHeight * imgChannels);
             if (!initImgData) {
-                return "Failed to allocate memory, please try again.";
+                return "Gagal alokasi memori, coba ulang ya.";
             }
             memcpy(initImgData, currImgData, imgWidth * imgHeight * imgChannels);
 
             tempImgData = (unsigned char*) malloc(imgWidth * imgHeight * imgChannels);
             if (!tempImgData) {
                 free(initImgData);
-                return "Failed to allocate memory, please try again.";
+                return "Gagal alokasi memori, coba ulang ya.";
             }
             memcpy(tempImgData, currImgData, imgWidth * imgHeight * imgChannels);
 
