@@ -73,20 +73,26 @@ class Image {
             if (imgChannels < 3) {
                 return "Image-nya harus ada minimal 3 channel (RGB), kok ini cuma " + to_string(imgChannels) + " channel doang.";
             }
-
-            bool isPng = (extension == "png");
             
             if (!currImgData) {
                 return "Image-nya gagal di-load, coba ulang ya...";
             }
             
-            initImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
+            // Allocate memory for backup copies
+            initImgData = (unsigned char*) malloc(imgWidth * imgHeight * imgChannels);
+            if (!initImgData) {
+                return "Gagal alokasi memori, coba ulang ya.";
+            }
             memcpy(initImgData, currImgData, imgWidth * imgHeight * imgChannels);
-        
-            tempImgData = (unsigned char*) malloc (imgWidth * imgHeight * imgChannels);
+
+            tempImgData = (unsigned char*) malloc(imgWidth * imgHeight * imgChannels);
+            if (!tempImgData) {
+                free(initImgData);
+                return "Gagal alokasi memori, coba ulang ya.";
+            }
             memcpy(tempImgData, currImgData, imgWidth * imgHeight * imgChannels);
 
-            return "";
+            return ""; // No error
         }
 };
 
