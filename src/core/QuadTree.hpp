@@ -246,7 +246,7 @@ class QuadTree {
     
                 size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
 
-                cout << "threshold : " << mid << " size : " << currentImageSize << endl;
+                //cout << "threshold : " << mid << " size : " << currentImageSize << endl;
 
                 if (currentImageSize <= targetImageSize) {
                     bestThreshold = mid;
@@ -263,10 +263,7 @@ class QuadTree {
 
             lastImg = true;
             threshold = bestThreshold;
-            cout << "Best threshold found: " << bestThreshold << endl;
             performQuadTree();
-            size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
-            cout << "threshold : " << bestThreshold << " size : " << currentImageSize << endl;
         }
 
         int getQuadtreeDepth() const {

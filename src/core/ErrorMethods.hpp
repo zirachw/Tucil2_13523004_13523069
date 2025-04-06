@@ -284,48 +284,56 @@ class Entropy : public ErrorMethod {
             std::unordered_map<int, int> histR, histG, histB;
             double sumR = 0, sumG = 0, sumB = 0;
             int n = width * height;
-            
-            // Build histograms and calculate average values
+        
+            // Step 1: Compute average values
             for (int i = x; i < x + height; i++) {
                 for (int j = y; j < y + width; j++) {
                     int idx = (i * imgWidth + j) * imgChannels;
-                    
+        
                     uint8_t r = currImgData[idx + 0];
                     uint8_t g = currImgData[idx + 1];
                     uint8_t b = currImgData[idx + 2];
-                    
-                    histR[r]++;
-                    histG[g]++;
-                    histB[b]++;
-                    
+        
                     sumR += r;
                     sumG += g;
                     sumB += b;
                 }
             }
-            
-            // Calculate entropy for each channel
-            double entropyR = 0, entropyG = 0, entropyB = 0;
-            
-            for (const auto& pair : histR) {
-                double probability = static_cast<double>(pair.second) / n;
-                entropyR -= probability * log2(probability);
-            }
-            
-            for (const auto& pair : histG) {
-                double probability = static_cast<double>(pair.second) / n;
-                entropyG -= probability * log2(probability);
-            }
-            
-            for (const auto& pair : histB) {
-                double probability = static_cast<double>(pair.second) / n;
-                entropyB -= probability * log2(probability);
-            }
-            
+        
             avgR = sumR / n;
             avgG = sumG / n;
             avgB = sumB / n;
-            
+        
+            // Step 2: Build difference histograms
+            for (int i = x; i < x + height; i++) {
+                for (int j = y; j < y + width; j++) {
+                    int idx = (i * imgWidth + j) * imgChannels;
+        
+                    int dr = static_cast<int>(currImgData[idx + 0]) - static_cast<int>(avgR);
+                    int dg = static_cast<int>(currImgData[idx + 1]) - static_cast<int>(avgG);
+                    int db = static_cast<int>(currImgData[idx + 2]) - static_cast<int>(avgB);
+        
+                    histR[dr]++;
+                    histG[dg]++;
+                    histB[db]++;
+                }
+            }
+        
+            // Step 3: Compute entropy
+            auto computeEntropy = [&](const std::unordered_map<int, int>& hist) -> double {
+                double entropy = 0;
+                for (const auto& x : hist) {
+                    int count = x.second;
+                    double p = static_cast<double>(count) / n;
+                    entropy -= p * std::log2(p);
+                }
+                return entropy;
+            };
+        
+            double entropyR = computeEntropy(histR);
+            double entropyG = computeEntropy(histG);
+            double entropyB = computeEntropy(histB);
+        
             return (entropyR + entropyG + entropyB) / 3.0;
         }
 };
