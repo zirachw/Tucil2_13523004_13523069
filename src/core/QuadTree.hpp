@@ -1,16 +1,49 @@
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
 
+// Libraries
 #include <queue>
 #include <time.h>
 #include "QuadTreeNode.hpp"
 
-// Global variables for image data
-extern unsigned char* currImgData; 
-extern unsigned char* initImgData;  
-extern unsigned char* tempImgData;
+/**
+ * @brief Image data buffers used throughout the compression process
+ * @param currImgData Current image data buffer used for processing
+ * @param initImgData Initial image data buffer kept as reference
+ * @param tempImgData Temporary image data buffer for intermediate processing
+ */
+extern unsigned char* currImgData, *initImgData, *tempImgData;
+
+/**
+ * @brief Global image dimensions and format information
+ * @param imgWidth Width of the image in pixels
+ * @param imgHeight Height of the image in pixels
+ * @param imgChannels Number of color channels (typically 3 for RGB, 4 for RGBA)
+ */
 extern int imgWidth, imgHeight, imgChannels;
 
+/**
+ * @brief Main class for quadtree-based image compression
+ * @param mode Error calculation mode (1-5)
+ * @param minBlock Minimum block size in pixels
+ * @param threshold Error threshold value
+ * @param targetPercentage Target compression percentage (0-1)
+ * @param inputPath Input image path
+ * @param inputExtension Input image file extension
+ * @param outputPath Output image path
+ * @param gifPath Output GIF path
+ * @param lastImg Flag for final image in compression process
+ * @param root Root node of the quadtree
+ * @param g GIF writer for visualization
+ * @param data Buffer for GIF frames
+ * @param startTime Compression start time
+ * @param endTime Compression end time
+ * @param initialSize Initial image size in bytes
+ * @param finalSize Final compressed image size in bytes
+ * @param compressionPercentage Achieved compression percentage
+ * @param quadtreeDepth Maximum depth of the quadtree
+ * @param quadtreeNode Number of nodes in the quadtree
+ */
 class QuadTree {
 
     private:
@@ -32,6 +65,9 @@ class QuadTree {
         int quadtreeDepth;
         int quadtreeNode;
 
+        /**
+         * @brief Write current image data to GIF animation
+         */
         void writeCurrImageToGif() {
             for (int i = 0; i < imgWidth; i++) {
                 for (int j = 0; j < imgHeight; j++) {
@@ -54,6 +90,9 @@ class QuadTree {
             GifWriteFrame(&g, data, imgWidth, imgHeight, 100);
         }
 
+        /**
+         * @brief Write temporary image data to GIF animation
+         */
         void writeTempImageToGif() {
             for (int i = 0; i < imgWidth; i++) {
                 for (int j = 0; j < imgHeight; j++) {
@@ -76,6 +115,10 @@ class QuadTree {
             GifWriteFrame(&g, data, imgWidth, imgHeight, 100);
         }
 
+        /**
+         * @brief Write current image data to file
+         * @param path Output file path
+         */
         void writeCurrImage(string path) const {
 
             if (!path.empty()) {
@@ -88,6 +131,10 @@ class QuadTree {
             }
         }
     
+        /**
+         * @brief Write temporary image data to file
+         * @param path Output file path
+         */
         void writeTempImage(string path) const {
 
             if (!path.empty()) {
@@ -100,8 +147,19 @@ class QuadTree {
             }
         }
   
-        
     public:
+
+        /**
+         * @brief Constructor that initializes compression parameters
+         * @param inputPath Path to input image
+         * @param mode Error calculation mode
+         * @param threshold Error threshold
+         * @param minBlock Minimum block size
+         * @param targetPercentage Target compression percentage
+         * @param outputPath Path for output image
+         * @param gifPath Path for output GIF
+         * @param inputExtension Input image format
+         */
         QuadTree(string inputPath, int mode, double threshold, int minBlock, double targetPercentage, string outputPath, string gifPath, string inputExtension) {
             
             this -> inputPath = inputPath;
@@ -127,6 +185,9 @@ class QuadTree {
             this -> quadtreeNode = 0;
         }
     
+        /**
+         * @brief Destructor that cleans up resources
+         */
         ~QuadTree() {
             if (data != nullptr) {
                 free(data);
@@ -134,6 +195,9 @@ class QuadTree {
             }
         }
 
+        /**
+         * @brief Perform quadtree compression with fixed threshold
+         */
         void performQuadTree() {
             queue<QuadTreeNode> q;
             q.push(root);
@@ -146,14 +210,12 @@ class QuadTree {
                 
                 if (lastImg) quadtreeNode++;
 
-                
                 int step = node.getStep();
                 int X = node.getX();
                 int Y = node.getY();
                 int width = node.getWidth();
                 int height = node.getHeight();
                 if (step < curMaxStep) continue;
-
 
                 if (step > curMaxStep && lastImg) {
                     quadtreeDepth = step;
@@ -193,8 +255,11 @@ class QuadTree {
             }
         }
 
+        /**
+         * @brief Perform binary search to find optimal threshold for target ratio
+         * @param ratio Target compression ratio
+         */
         void performBinserQuadTree(double ratio) {
-            // Get appropriate upper and lower thresholds based on selected mode
             ErrorMethod* errorMethod = nullptr;
             double lowerThreshold = 0.0, upperThreshold = 0.0;
             
@@ -227,26 +292,18 @@ class QuadTree {
             }
             
             double l = lowerThreshold, r = upperThreshold;
-            
-            cout << "Using error method " << mode << " with threshold range: " << lowerThreshold << " to " << upperThreshold << endl;
-
             size_t initImageSize = Image::getOriginalSize(inputPath);
             size_t targetImageSize = initImageSize - (initImageSize * ratio);
-
-            cout << "Init Size: " << initImageSize << "bytes (" << Image::getSizeInKB(initImageSize) << " KB)" << endl;
-            cout << "Target Size: " << targetImageSize << "bytes (" << Image::getSizeInKB(targetImageSize) << " KB)" << endl;
 
             double bestThreshold = -1;
             lastImg = false;
 
-            for (int i = 1; i <= 13; i++) {
+            for (int i = 1; i <= 24; i++) {
                 double mid = (l + r) / 2;
                 threshold = mid;
                 performQuadTree();
     
                 size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
-
-                //cout << "threshold : " << mid << " size : " << currentImageSize << endl;
 
                 if (currentImageSize <= targetImageSize) {
                     bestThreshold = mid;
@@ -266,25 +323,50 @@ class QuadTree {
             performQuadTree();
         }
 
+        /**
+         * @brief Get the maximum depth of the quadtree
+         * @return Maximum depth
+         */
         int getQuadtreeDepth() const {
             return quadtreeDepth;
         }
+
+        /**
+         * @brief Get the number of nodes in the quadtree
+         * @return Node count
+         */
         int getQuadtreeNode() const {
             return quadtreeNode;
         }
 
+        /**
+         * @brief Get the compression percentage achieved
+         * @return Compression percentage
+         */
         double getCompressionPercentage() const {
             return round(compressionPercentage * 100) / 100.0;
         }
 
+        /**
+         * @brief Get the execution time in milliseconds
+         * @return Execution time
+         */
         int getExecutionTime() const {
             return (endTime - startTime) / (CLOCKS_PER_SEC / 1000);
         }
 
+        /**
+         * @brief Get the initial image size in bytes
+         * @return Initial size
+         */
         int getInitialSize() const {
             return initialSize;
         }
 
+        /**
+         * @brief Get the final compressed image size in bytes
+         * @return Final size
+         */
         int getFinalSize() const {
             return finalSize;
         }
