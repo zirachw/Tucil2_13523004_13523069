@@ -1,25 +1,38 @@
-#include "core/Input.hpp"
+#include "core/IO.hpp"
 
-// Global variables for image data
-unsigned char *currImgData = nullptr;
-unsigned char *initImgData = nullptr;
-unsigned char *tempImgData = nullptr;
+/**
+ * @brief Image data buffers used throughout the compression process
+ * @param currImgData Current image data buffer used for processing
+ * @param initImgData Initial image data buffer kept as reference
+ * @param tempImgData Temporary image data buffer for intermediate processing
+ */
+unsigned char *currImgData = nullptr, *initImgData = nullptr, *tempImgData = nullptr;
 
 int main()
 {
-    // ~~ Input Handler ~~
-    Input input;
+    // ~~ IO ~~
+    IOHandler IO;
     cout << BRIGHT_YELLOW << "Input" << BRIGHT_GREEN << " done." << endl;
 
+
     //~~ Quadtree Compression Process ~~
-    QuadTree qt(input.getInputPath(), input.getMode(), input.getThreshold(), input.getMinBlock(),
-                input.getTargetPercentage(), input.getOutputPath(), input.getGifPath(), input.getInputExtension());
+    QuadTree qt(IO.getInputPath(), 
+                IO.getMode(), 
+                IO.getThreshold(), 
+                IO.getMinBlock(),
+                IO.getTargetPercentage(), 
+                IO.getOutputPath(), 
+                IO.getGifPath(), 
+                IO.getInputExtension());
+
     cout << RESET BRIGHT_CYAN << "Performing quadtree compression..." << endl;
 
-    if (input.getTargetPercentage() == 0) qt.performQuadTree();
-    else qt.performBinserQuadTree(input.getTargetPercentage());
+    if (IO.getTargetPercentage() == 0) qt.performQuadTree();
+    else qt.performBinserQuadTree(IO.getTargetPercentage());
+
     cout << BRIGHT_YELLOW << "Quadtree compression" << BRIGHT_GREEN << " done." << endl << endl;
 
+    
     //~~ Output Results ~~
     cout << BRIGHT_WHITE ITALIC << "~" << BRIGHT_YELLOW << " Results " << BRIGHT_WHITE "~" << endl;
     cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Executing time: " << BRIGHT_GREEN << qt.getExecutionTime() << " ms" << endl;
@@ -30,6 +43,7 @@ int main()
     cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Quadtree node: " << BRIGHT_GREEN << qt.getQuadtreeNode() << endl;
     cout << endl;
 
+    
     //~~ Free Memory ~~
     if (currImgData != nullptr) {
         free(currImgData);
