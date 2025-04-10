@@ -1,23 +1,51 @@
 #ifndef INPUT_HPP
 #define INPUT_HPP
 
+// Libraries
 #include <iostream>
 #include <fstream>
 #include <regex>
-#include <sys/stat.h>
+#include <filesystem>
 #include "QuadTree.hpp"
 
-// Global variables for image data
-extern unsigned char* currImgData;
-extern unsigned char* initImgData;
-extern unsigned char* tempImgData;
+/**
+ * @brief Image data buffers used throughout the compression process
+ * @param currImgData Current image data buffer used for processing
+ * @param initImgData Initial image data buffer kept as reference
+ * @param tempImgData Temporary image data buffer for intermediate processing
+ */
+extern unsigned char* currImgData, *initImgData, *tempImgData;
+
+/**
+ * @brief Global image dimensions and format information
+ * @param imgWidth Width of the image in pixels
+ * @param imgHeight Height of the image in pixels
+ * @param imgChannels Number of color channels (typically 3 for RGB, 4 for RGBA)
+ */
 extern int imgWidth, imgHeight, imgChannels;
 
 using namespace std;
 
-class Input {
-    private:
+/**
+ * @brief Handles user input validation and processing
+ * @param mode Selected error calculation mode (1-5)
+ * @param minBlock Minimum block size in pixels
+ * @param threshold Error threshold value
+ * @param upperThreshold Upper threshold for error calculations
+ * @param lowerThreshold Lower threshold for error calculations
+ * @param targetPercentage Target compression percentage (0-1)
+ * @param inputPath Input image path
+ * @param inputPathDisplay Display version of input path
+ * @param outputPath Output image path
+ * @param outputPathDisplay Display version of output path
+ * @param gifPath Output GIF path for visualization
+ * @param gifPathDisplay Display version of GIF path
+ * @param inputExtension Input image file extension
+ * @param errorMethod Name of selected error method
+ */
+class IOHandler {
 
+    private:
         int mode, minBlock;
         double threshold, upperThreshold, lowerThreshold, targetPercentage;
         string inputPath, inputPathDisplay;
@@ -25,41 +53,73 @@ class Input {
         string gifPath, gifPathDisplay;
         string inputExtension, errorMethod;
 
-        // Helper function to extract filename with extension from a path
+        /**
+         * @brief Extract filename with extension from a path
+         * @param path Full file path
+         * @return Filename with extension
+         */
         string getFilename(const string& path) {
             size_t lastSlash = path.find_last_of("/\\");
             string filename = path.substr(lastSlash + 1);
             return filename;
         }
 
-        // Helper function to extract extension from a path
+        /**
+         * @brief Extract extension from a path
+         * @param path Full file path
+         * @return File extension without dot
+         */
         string getExtension(const string& path) {
             string extension = "";
             size_t dotPos = path.find_last_of('.');
+
             if (dotPos != string::npos) {
                 extension = path.substr(dotPos + 1);
                 return extension;
             }
+
             return "";
         }
         
-        // Method to convert WSL paths to Windows paths
+        /**
+         * @brief Detect the current system (WSL, UNIX, Windows)
+         * @return String indicating system type
+         */
+        string getPlatformType() {
+            FILE* f = fopen("/proc/version", "r");
+            if (f) {
+                char buffer[256];
+                fread(buffer, sizeof(char), sizeof(buffer) - 1, f);
+                fclose(f);
+                buffer[255] = '\0';
+        
+                if (strstr(buffer, "Microsoft") != nullptr || strstr(buffer, "WSL") != nullptr) {
+                    return "WSL";
+                }
+                return "UNIX";
+            }
+        
+            // If /proc/version doesn't exist, assume native Windows
+            return "Windows";
+        }
+
+        /**
+         * @brief Convert WSL paths to Windows paths
+         * @param originalPath Original path
+         * @return Converted path
+         */
         string convertPath(const string& originalPath) {
-            // Check if it's a WSL path
+            
             if (originalPath.length() >= 6 && originalPath.substr(0, 5) == "/mnt/" && 
                 isalpha(originalPath[5]) && (originalPath.length() == 6 || originalPath[6] == '/')) {
                 
-                // Get drive letter
                 char driveLetter = originalPath[5];
                 
                 // Create Windows-style path
                 string windowsPath = string(1, toupper(driveLetter)) + ":";
-                
-                // Add the rest of the path, replacing forward slashes with backslashes
                 if (originalPath.length() > 6) {
                     string restOfPath = originalPath.substr(6);
-                    
-                    // Replace all forward slashes with backslashes
+
                     for (char& c : restOfPath) {
                         if (c == '/') {
                             c = '\\';
@@ -67,8 +127,8 @@ class Input {
                     }
                     
                     windowsPath += restOfPath;
-                } else {
-                    // Just the drive root
+                } 
+                else {
                     windowsPath += "\\";
                 }
                 
@@ -79,26 +139,38 @@ class Input {
             return originalPath;
         }
 
-        // Check if the path is a fully qualified path (has drive letter and directory structure)
+        /**
+         * @brief Validate if a path is valid for the current platform
+         * @param path Path to validate
+         * @return Empty string if valid, error message if invalid
+         */
         string validatePath(const string& path) {
             string directory;
+            string platform = getPlatformType();
+
+            // Restrict WSL/UNIX access to $HOME or /mnt/<drive>/...
+            if (platform == "WSL" || platform == "UNIX") {
             
-            // Check if it's a WSL-mounted Windows drive path
-            if (path.length() >= 6 && path.substr(0, 5) == "/mnt/" && isalpha(path[5]) && 
-                (path.length() == 6 || path[6] == '/')) {
-                
-                // Validate basic WSL path format
-                char driveLetter = toupper(path[5]);
-                
-                // Make sure the drive letter is valid (typically A-Z)
-                if (driveLetter < 'A' || driveLetter > 'Z') {
-                    return "Drive tidak valid. Gunakan drive letter yang benar (A-Z).";
+                bool startsWithHome = path.rfind("/home/", 0) == 0;
+                bool startsWithMnt = path.rfind("/mnt/", 0) == 0 &&
+                                     path.length() >= 7 &&
+                                     isalpha(path[5]) &&
+                                     path[6] == '/';
+            
+                if (!startsWithHome && !startsWithMnt) {
+                    return "WSL dan UNIX hanya bisa akses path berawalan /home/<user>/ atau /mnt/<drive>/, pastiin sesuai yaa.";
                 }
-                
-                // Convert to Windows path
+            }
+
+            // Check if the path is a /mnt path
+            if (path.length() >= 6 && path.substr(0, 5) == "/mnt/" && isalpha(path[5]) &&
+                (path.length() == 6 || path[6] == '/')) {
+                if (platform != "WSL") return "Format path (/mnt/...) hanya bisa digunakan pada WSL.";
+        
+                char driveLetter = toupper(path[5]);
+                if (driveLetter < 'A' || driveLetter > 'Z') return "Drive tidak valid. Gunakan drive letter yang benar (A-Z).";
+        
                 string windowsPath = convertPath(path);
-                
-                // Extract directory part from the Windows path
                 size_t lastSlash = windowsPath.find_last_of("\\");
                 
                 if (lastSlash == string::npos) { 
@@ -106,62 +178,43 @@ class Input {
                 }
                 
                 // Set directory to the Windows path's directory part
-                if (lastSlash <= 2) {
-                    directory = windowsPath.substr(0, 3);  // Take "D:\" or similar
-                } else {
-                    directory = windowsPath.substr(0, lastSlash); // Subdirectory
-                }
+                if (lastSlash <= 2) directory = windowsPath.substr(0, 3);   // Take "D:\" or similar 
+                else directory = windowsPath.substr(0, lastSlash);          // Subdirectory
             }
-            // UNIX path validation
+
+            // Check if the path is a UNIX / WSL path
             else if (path.length() > 0 && path[0] == '/') {
-                // Extract directory part from the path
+                if (platform == "Windows") return "Format path UNIX (dimulai dengan /) tidak bisa digunakan pada sistem Windows.";
                 size_t lastSlash = path.find_last_of("/");
-                
-                if (lastSlash == string::npos) { 
-                    return "Format path-nya salah bang.";
-                }
-                
-                // Handle root directory case
-                if (lastSlash == 0) {
-                    directory = "/"; // Root directory
-                } else {
-                    directory = path.substr(0, lastSlash);
-                }
+                if (lastSlash == string::npos) return "Format path-nya salah bang.";
+                directory = (lastSlash == 0) ? "/" : path.substr(0, lastSlash);
             }
-            // Windows path validation
+
+            // Check if the path is a Windows path
             else if (path.length() >= 3 && path[1] == ':' && (path[2] == '\\' || path[2] == '/')) {
-                // Extract directory part from the path
+                if (platform != "Windows") return "Format path Windows (C:\\...) tidak bisa digunakan pada sistem UNIX.";
                 size_t lastSlash = path.find_last_of("/\\");
-                
-                if (lastSlash == string::npos) { 
-                    return "Format path-nya salah bang.";
-                }
-                
-                // Handle Windows root directory case
-                if (lastSlash <= 2) {
-                    directory = path.substr(0, 3);  // Take "D:\" or "D:/"
-                } else {
-                    directory = path.substr(0, lastSlash); // This is a file in a subdirectory
-                }
+                if (lastSlash == string::npos) return "Format path-nya salah bang.";
+                directory = (lastSlash <= 2) ? path.substr(0, 3) : path.substr(0, lastSlash);
             }
+
+            // Not a recognized path format
             else {
                 return "Format path-nya salah bang.";
             }
             
-            // Directory exists or not? (common check for all path types)
-            struct stat info;
-            if (stat(directory.c_str(), &info) != 0) {
-                return "Direktorinya engga ada, coba tambahin dulu deh";
-            }
-        
-            // Is it a directory?
-            if (!(info.st_mode & S_IFDIR)) {
-                return "Format path-nya salah bang.";
+            // Check if the directory exists from the path
+            if (!std::filesystem::is_directory(directory)) {
+                return "Direktorinya engga ada, coba tambahin dulu deh atau cek typo di path-nya.";
             }
             
-            return ""; // Empty string means valid path
+            // Valid path
+            return "";
         }
 
+        /**
+         * @brief Process and validate input image path
+         */
         void validateInputPath() {
             string path;
             string convertedPath;
@@ -232,6 +285,9 @@ class Input {
             this -> inputExtension = extension;
         }
 
+        /**
+         * @brief Process and validate error calculation mode
+         */
         void validateMode() {
             string input;
             int modeValue;
@@ -330,6 +386,9 @@ class Input {
             }
         }
 
+        /**
+         * @brief Process and validate error threshold value
+         */
         void validateThreshold() {
             string input;
             double thresholdValue;
@@ -380,6 +439,8 @@ class Input {
                     
                     isValid = true;
                 } 
+
+                // Overflow or invalid argument
                 catch (const std::out_of_range& e) {
                     showLog(3);
                     cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar atau terlalu kecil." << endl << endl;
@@ -395,6 +456,9 @@ class Input {
             this->threshold = thresholdValue;
         }
 
+        /**
+         * @brief Process and validate minimum block size
+         */
         void validateMinBlock() {
             string input;
             int blockSize;
@@ -462,6 +526,9 @@ class Input {
             this->minBlock = blockSize;
         }
         
+        /**
+         * @brief Process and validate target compression percentage
+         */
         void validateTargetPercentage() {
             string input;
             double percentValue;
@@ -514,6 +581,8 @@ class Input {
                     
                     isValid = true;
                 } 
+
+                // Overflow or invalid argument
                 catch (const std::out_of_range& e) {
                     showLog(5);
                     cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Error: Angkanya terlalu besar atau terlalu kecil." << endl << endl;
@@ -527,8 +596,11 @@ class Input {
             }
             
             this->targetPercentage = percentValue;
-}
+        }
 
+        /**
+         * @brief Process and validate output image path
+         */
         void validateOutputPath() {
             string path;
             string extension;
@@ -609,6 +681,12 @@ class Input {
                             continue;
                         }
                     }
+
+                    if (validResponse && tolower(confirm) == 'n') 
+                    {
+                        showLog(6);
+                        continue;
+                    }
                 }
 
                 // Case 2: Different file already exists at the output path
@@ -621,7 +699,7 @@ class Input {
                         while (!validResponse) {
                             cout << endl;
                             cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Warning: ";
-                            cout << RESET BRIGHT_GREEN << "." << getInputExtension() << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite." << endl;
+                            cout << RESET BRIGHT_GREEN << getFilename(path) << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite." << endl;
                             cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Yakin ga nih? " << RESET BRIGHT_WHITE << "[";
                             cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE << "/" << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "]" << endl;
                             cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;            
@@ -654,16 +732,25 @@ class Input {
                                 continue;
                             }
                         }
+
+                        if (validResponse && tolower(confirm) == 'n') 
+                        {
+                            showLog(6);
+                            continue;
+                        }
                     }
-                }
                 
-                isValidPath = true;
+                    isValidPath = true;
+                }
             }
-            
+
             this -> outputPathDisplay = path;
             this -> outputPath = convertPath(path);
         }
 
+        /**
+         * @brief Process and validate output GIF path
+         */
         void validateGifPath() {
             string path;
             string extension;
@@ -713,7 +800,7 @@ class Input {
                     while (!validResponse) {
                         cout << endl;
                         cout << RESET RED BOLD << "[!]" << RESET BRIGHT_WHITE ITALIC << " Warning: ";
-                        cout << RESET BRIGHT_GREEN << ".gif" << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite" << endl;
+                        cout << RESET BRIGHT_GREEN << getFilename(path) << RESET BRIGHT_WHITE ITALIC << " file udah ada, jadinya bakal di-overwrite" << endl;
                         cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Yakin ga nih? " << RESET BRIGHT_WHITE << "[";
                         cout << RESET GREEN BOLD << "Y" << RESET BRIGHT_WHITE << "/" << RESET RED BOLD << "N" << RESET BRIGHT_WHITE << "]" << endl;
                         cout << RESET BRIGHT_YELLOW << ">>  " << BRIGHT_WHITE BAR_CURSOR;
@@ -746,6 +833,12 @@ class Input {
                             continue;
                         }
                     }
+
+                    if (validResponse && tolower(confirm) == 'n') 
+                    {   
+                        showLog(7);
+                        continue;
+                    }
                 }
                 
                 isValidPath = true;
@@ -755,12 +848,17 @@ class Input {
             this -> gifPath = convertPath(path);
         }
 
+        /**
+         * @brief Display the log messages for each step of the process
+         * @param step The current step of the process
+         */
         void showLog(int step)
         {
             cout << CLEAR_SCREEN;
             cout << ITALIC MAGENTA << "Quadpressor" << BRIGHT_WHITE << " ~ made with " << BRIGHT_RED << "love " << BRIGHT_WHITE << "by " << BRIGHT_CYAN << "FaRzi" << BRIGHT_WHITE << " :D" << endl;
             cout << endl << "~ " << BRIGHT_YELLOW << "Tasks" << BRIGHT_WHITE << " ~" << endl;
         
+            // Input path
             if (step == 1) 
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Getting input path..." << endl;
@@ -771,6 +869,7 @@ class Input {
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_in.jpg" << endl;
             }
         
+            // Error method (mode)
             else if (step == 2) 
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -786,6 +885,7 @@ class Input {
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 5 " << BRIGHT_RED << "~" << RESET ITALIC << " Structural Similarity Index (SSIM)" << endl;
             }
         
+            // Threshold
             else if (step == 3)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -797,7 +897,8 @@ class Input {
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter threshold " << RESET BRIGHT_CYAN << "(" << lowerThreshold << " - " << upperThreshold << ")" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << (lowerThreshold + upperThreshold) / 2 << endl;
             }
-        
+            
+            // Minimum block size
             else if (step == 4)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -812,6 +913,8 @@ class Input {
                 cout << RESET BRIGHT_CYAN << "(" << maxBlockSize << " px)" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << "8" << endl;
             }
+
+            // Target percentage
             else if (step == 5)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -822,11 +925,12 @@ class Input {
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Getting target percentage..." << endl;
                 cout << endl;
                 
-                
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter target percentage as a decimal " << RESET BRIGHT_CYAN << "(0.0 - 1.0 where 1.0 = 100%)" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: ";
                 cout << RESET MAGENTA << 0.85 << BRIGHT_WHITE ITALIC << " for " << RESET MAGENTA << "85%" << endl;
             }
+
+            // Output image path
             else if (step == 6)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -845,7 +949,8 @@ class Input {
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image output path, output extension must be the same as input." << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.jpg" << endl;
             }
-        
+            
+            // Output GIF path
             else if (step == 7)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -865,7 +970,8 @@ class Input {
                 cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter gif output path" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.gif" << endl;
             }
-        
+            
+            // Complete
             else if (step == 8)
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
@@ -886,8 +992,10 @@ class Input {
         }
 
     public:
-
-        Input() {
+        /**
+         * @brief Constructor that validates all required inputs
+         */
+        IOHandler() {
             validateInputPath();
             validateMode();
             validateThreshold();
@@ -897,16 +1005,58 @@ class Input {
             validateGifPath();      
             showLog(8); 
         }
-        
-        ~Input() {}
 
+        /**
+         * @brief Destructor
+         */
+        ~IOHandler() {}
+
+        /**
+         * @brief Get the validated input image path
+         * @return Input image path
+         */
         string getInputPath() {return inputPath;}
+
+        /**
+         * @brief Get the input image extension
+         * @return Input image extension
+         */
         string getInputExtension() {return inputExtension;}
+
+        /**
+         * @brief Get the selected error calculation mode
+         * @return Error mode (1-5)
+         */
         int getMode() {return mode;}
+
+        /**
+         * @brief Get the selected error method
+         * @return Error method name
+         */
         double getThreshold() {return threshold;}
+
+        /**
+         * @brief Get the minimum block size
+         * @return Minimum block size
+         */
         int getMinBlock() {return minBlock;}
+
+        /**
+         * @brief Get the target compression percentage
+         * @return Target compression percentage (0.0 - 1.0)
+         */
         double getTargetPercentage() {return targetPercentage;}
+
+        /**
+         * @brief Get the output image path
+         * @return Output image path
+         */
         string getOutputPath() {return outputPath;}
+
+        /**
+         * @brief Get the output GIF path
+         * @return Output GIF path
+         */
         string getGifPath() {return gifPath;}
 };
 
