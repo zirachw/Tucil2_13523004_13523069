@@ -3,6 +3,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+
+// Libraries
 #include "../libs/gif.h"
 #include "../libs/style.h"
 #include "../libs/stb_image.h"
@@ -12,23 +14,51 @@
 #include <string>
 #include <algorithm>
 
-// Global variables for image data
-extern unsigned char* currImgData;
-extern unsigned char* initImgData;
-extern unsigned char* tempImgData;
+/**
+ * @brief Image data buffers used throughout the compression process
+ * @param currImgData Current image data buffer used for processing
+ * @param initImgData Initial image data buffer kept as reference
+ * @param tempImgData Temporary image data buffer for intermediate processing
+ */
+extern unsigned char* currImgData, *initImgData, *tempImgData;
+
+/**
+ * @brief Global image dimensions and format information
+ * @param imgWidth Width of the image in pixels
+ * @param imgHeight Height of the image in pixels
+ * @param imgChannels Number of color channels (typically 3 for RGB, 4 for RGBA)
+ */
 int imgWidth, imgHeight, imgChannels;
 
 using namespace std;
 
+/**
+ * @brief Static utility class for image operations
+ */
 class Image {
     
     public:
+        /**
+         * @brief Callback function for stbi_write functions
+         * @param context Pointer to context (size variable)
+         * @param data Pointer to data
+         * @param size Size of data
+         */
         static void getBytes(void *context, void *data, int size) {
             (void)data;
             size_t *total = reinterpret_cast<size_t *>(context);
             *total += static_cast<size_t>(size);
         }
 
+        /**
+         * @brief Calculate the size after encoding with a specific format
+         * @param image Pointer to image data
+         * @param w Width of the image
+         * @param h Height of the image
+         * @param extension File extension/format
+         * @param channels Number of color channels
+         * @return Size in bytes after encoding
+         */
         static size_t getEncodedSize(unsigned char* image, int w, int h, const string& extension, int channels = 3) {
 
             size_t totalBytes = 0;
@@ -42,11 +72,11 @@ class Image {
             return totalBytes;
         }
 
-        static size_t getEncodedSize(unsigned char* image, int w, int h) {
-            // Default to jpg for backward compatibility
-            return getEncodedSize(image, w, h, "jpg");
-        }
-
+        /**
+         * @brief Get the original size of the image file
+         * @param path Path to the image file
+         * @return Size in bytes of the original image file
+         */
         static size_t getOriginalSize(string path) {
             FILE* file = fopen(path.c_str(), "rb");
             if (!file) {
@@ -54,7 +84,6 @@ class Image {
                 return 0;
             }
             
-            // Get original file size
             fseek(file, 0, SEEK_END);
             size_t originalSize = ftell(file);
             fclose(file);
@@ -62,10 +91,21 @@ class Image {
             return originalSize;
         }
 
+        /**
+         * @brief Convert size in bytes to kilobytes
+         * @param sizeInBytes Size in bytes
+         * @return Size in kilobytes
+         */
         static double getSizeInKB(size_t sizeInBytes) {
             return static_cast<double>(sizeInBytes) / 1024.0;
         }
 
+        /**
+         * @brief Load an image from file into memory
+         * @param path Path to the image file
+         * @param extension File extension/format
+         * @return Empty string if successful, error message if failed
+         */
         static string loadImage(string path, string extension) {
             
             currImgData = stbi_load(path.c_str(), &imgWidth, &imgHeight, &imgChannels, 0);
