@@ -374,6 +374,7 @@ class MaxPixelDifference : public ErrorMethod {
         double calculateError(unsigned char* currImgData, int x, int y, int width, int height) override {
             uint8_t minR = 255, minG = 255, minB = 255;
             uint8_t maxR = 0, maxG = 0, maxB = 0;
+            double sumR = 0, sumG = 0, sumB = 0;
             
             // Calculate min and max values for each channel
             for (int i = x; i < x + height; i++) {
@@ -391,6 +392,10 @@ class MaxPixelDifference : public ErrorMethod {
                     maxR = std::max(maxR, r);
                     maxG = std::max(maxG, g);
                     maxB = std::max(maxB, b);
+
+                    sumR += r;
+                    sumG += g;
+                    sumB += b;
                 }
             }
             
@@ -398,6 +403,12 @@ class MaxPixelDifference : public ErrorMethod {
             double diffR = maxR - minR;
             double diffG = maxG - minG;
             double diffB = maxB - minB;
+
+            // Assign average values for each channel
+            int n = width * height;
+            avgR = sumR / n;
+            avgG = sumG / n;
+            avgB = sumB / n;
             
             // Calculate the final error value as the average of differences across all channels
             return (diffR + diffG + diffB) / 3.0;
@@ -632,24 +643,19 @@ class SSIM : public ErrorMethod {
             double sumB2Val = getSum(sumB2);
 
             // Calculate mean values for each channel
-            double meanR = sumRVal / n;
-            double meanG = sumGVal / n;
-            double meanB = sumBVal / n;
+            avgR = sumRVal / n;
+            avgG = sumGVal / n;
+            avgB = sumBVal / n;
 
             // Calculate variance for each channel
-            double varR = (sumR2Val / n) - (meanR * meanR);
-            double varG = (sumG2Val / n) - (meanG * meanG);
-            double varB = (sumB2Val / n) - (meanB * meanB);
+            double varR = (sumR2Val / n) - (avgR * avgR);
+            double varG = (sumG2Val / n) - (avgG * avgG);
+            double varB = (sumB2Val / n) - (avgB * avgB);
 
-            // Calculate covariance for each channel
+            // Calculate the SSIM value across all channels
             double ssimR = C2 / (varR + C2);
             double ssimG = C2 / (varG + C2);
             double ssimB = C2 / (varB + C2);
-
-            // Calculate the average SSIM value across all channels
-            avgR = meanR;
-            avgG = meanG;
-            avgB = meanB;
 
             // Calculate the final error value as the inverse of average SSIM across all channels
             return (1.0 - ssimR + 1.0 - ssimG + 1.0 - ssimB) / 3.0;
