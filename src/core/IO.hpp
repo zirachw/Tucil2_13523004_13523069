@@ -861,12 +861,15 @@ class IOHandler {
             // Input path
             if (step == 1) 
             {
-                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Getting input path..." << endl;
+                cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Enter image input path, supported formats: ";
+                cout << RESET BRIGHT_GREEN << "jpg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "jpeg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "png" << BRIGHT_WHITE << "." << endl;
                 cout << endl;
         
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image input path, supported formats: ";
-                cout << RESET BRIGHT_GREEN << "jpg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "jpeg" << BRIGHT_WHITE << ", " << BRIGHT_GREEN << "png" << BRIGHT_WHITE << "." << endl;
-                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_in.jpg" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Example: " << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " D:\\bla-bla-bla\\example_in.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "Windows" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " /home/<user>/example_in.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "Linux" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " /home/<user>/example_in.jpg" << RESET ITALIC BRIGHT_WHITE << " or";
+                cout << RESET BRIGHT_YELLOW << " /mnt/<drive>/example_in.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "WSL" << endl;
             }
         
             // Error method (mode)
@@ -874,10 +877,10 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Getting Error Method..." << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Enter error measurement method..." << endl;
                 cout << endl;
         
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter mode:" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Available modes:" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 1 " << BRIGHT_RED << "~" << RESET ITALIC << " Variance" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 2 " << BRIGHT_RED << "~" << RESET ITALIC << " Mean Absolute Deviation (MAD)" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " 3 " << BRIGHT_RED << "~" << RESET ITALIC << " Max Pixel Difference (MPD)" << endl;
@@ -890,11 +893,11 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
-                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Getting threshold..." << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Measurement Method: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Enter threshold..." << endl;
                 cout << endl;
         
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter threshold " << RESET BRIGHT_CYAN << "(" << lowerThreshold << " - " << upperThreshold << ")" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Threshold range: " << RESET BRIGHT_CYAN << lowerThreshold << " - " << upperThreshold << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << (lowerThreshold + upperThreshold) / 2 << endl;
             }
             
@@ -903,13 +906,13 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Measurement Method: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
-                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Getting minimum block size..." << endl;
+                cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Enter minimum block size..." << endl;
                 cout << endl;
                 
                 int maxBlockSize = imgWidth * imgHeight;
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter minimum block size, must not exceed the image area ";
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Must not exceed the image area ";
                 cout << RESET BRIGHT_CYAN << "(" << maxBlockSize << " px)" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: " << RESET MAGENTA << "8" << endl;
             }
@@ -919,13 +922,13 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Measurement Method: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
-                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Getting target percentage..." << endl;
+                cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Enter target percentage..." << endl;
                 cout << endl;
                 
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter target percentage as a decimal " << RESET BRIGHT_CYAN << "(0.0 - 1.0 where 1.0 = 100%)" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Decimal " << RESET BRIGHT_CYAN << "(0.0 - 1.0 where 1.0 = 100%)" << endl;
                 cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example: ";
                 cout << RESET MAGENTA << 0.85 << BRIGHT_WHITE ITALIC << " for " << RESET MAGENTA << "85%" << endl;
             }
@@ -935,7 +938,7 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Measurement Method: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
@@ -943,11 +946,14 @@ class IOHandler {
                 if (targetPercentage == 0) cout << RESET BRIGHT_RED << " (disabled)" << endl;
                 else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
         
-                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Getting output path..."<<endl;
+                cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Enter image output path..."<<endl;
                 cout << endl;
         
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter image output path, output extension must be the same as input." << endl;
-                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.jpg" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Output extension must be the same as input. Example: " << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " D:\\bla-bla-bla\\example_out.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "Windows" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " /home/<user>/example_out.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "Linux" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_YELLOW << " /home/<user>/example_out.jpg" << RESET ITALIC BRIGHT_WHITE << " or";
+                cout << RESET BRIGHT_YELLOW << " /mnt/<drive>/example_out.jpg" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_CYAN << "WSL" << endl;
             }
             
             // Output GIF path
@@ -955,7 +961,7 @@ class IOHandler {
             {
                 cout << RESET GREEN BOLD << "[1/7]" << RESET BRIGHT_WHITE ITALIC << " Image: " << RESET MAGENTA << getFilename(inputPathDisplay) << BRIGHT_YELLOW << " (" << imgWidth << " x " << imgHeight << ") ";
                 cout << BRIGHT_CYAN << fixed << setprecision(2) << Image::getSizeInKB(Image::getOriginalSize(inputPath)) << " KB" << BRIGHT_WHITE << ". Path: " << MAGENTA << inputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Method Measurement: " << RESET MAGENTA << errorMethod << endl;
+                cout << RESET GREEN BOLD << "[2/7]" << RESET BRIGHT_WHITE ITALIC << " Error Measurement Method: " << RESET MAGENTA << errorMethod << endl;
                 cout << RESET GREEN BOLD << "[3/7]" << RESET BRIGHT_WHITE ITALIC << " Threshold: " << RESET MAGENTA << threshold << endl;
                 cout << RESET GREEN BOLD << "[4/7]" << RESET BRIGHT_WHITE ITALIC << " Minimum Block Size: " << RESET MAGENTA << minBlock << endl;
                 cout << RESET GREEN BOLD << "[5/7]" << RESET BRIGHT_WHITE ITALIC << " Target Percentage: " << RESET MAGENTA << targetPercentage;
@@ -964,11 +970,14 @@ class IOHandler {
                 else cout << " (" << targetPercentage * 100.0f << "%)" << endl;
         
                 cout << RESET GREEN BOLD << "[6/7]" << RESET BRIGHT_WHITE ITALIC << " Output Path: " << RESET MAGENTA << outputPathDisplay << endl;
-                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " Getting gif path..." << endl;
+                cout << RESET GREEN BOLD << "[7/7]" << RESET BRIGHT_WHITE ITALIC << " Enter GIF output path..." << endl;
                 cout << endl;
         
-                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Enter gif output path" << endl;
-                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE ITALIC << " Example:" << RESET MAGENTA << " D:\\something_out.gif" << endl;
+                cout << RESET BRIGHT_CYAN BOLD << "[?]" << RESET BRIGHT_WHITE ITALIC << " Example: " << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_GREEN << " D:\\bla-bla-bla\\example_out.gif" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_YELLOW << "Windows" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_GREEN << " /home/<user>/example_out.gif" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_YELLOW << "Linux" << endl;
+                cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_GREEN << " /home/<user>/example_out.gif" << RESET ITALIC BRIGHT_WHITE << " or";
+                cout << RESET BRIGHT_GREEN << " /mnt/<drive>/example_out.gif" << RESET ITALIC BRIGHT_WHITE << " for " << RESET BRIGHT_YELLOW << "WSL" << endl;
             }
             
             // Complete
