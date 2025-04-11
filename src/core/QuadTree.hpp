@@ -1,8 +1,6 @@
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
 
-extern int compressionQuality;
-
 // Libraries
 #include <queue>
 #include <time.h>
@@ -21,8 +19,9 @@ extern unsigned char* currImgData, *initImgData, *tempImgData;
  * @param imgWidth Width of the image in pixels
  * @param imgHeight Height of the image in pixels
  * @param imgChannels Number of color channels (typically 3 for RGB, 4 for RGBA)
+ * @param compressionQuality Adaptive compression quality for stb_image_write JPG/JPEG encoding
  */
-extern int imgWidth, imgHeight, imgChannels;
+extern int imgWidth, imgHeight, imgChannels, compressionQuality;
 
 /**
  * @brief Main class for quadtree-based image compression

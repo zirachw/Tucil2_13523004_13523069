@@ -14,8 +14,6 @@
 #include <string>
 #include <algorithm>
 
-int compressionQuality;
-
 /**
  * @brief Image data buffers used throughout the compression process
  * @param currImgData Current image data buffer used for processing
@@ -29,8 +27,9 @@ extern unsigned char* currImgData, *initImgData, *tempImgData;
  * @param imgWidth Width of the image in pixels
  * @param imgHeight Height of the image in pixels
  * @param imgChannels Number of color channels (typically 3 for RGB, 4 for RGBA)
+ * @param compressionQuality Adaptive compression quality for stb_image_write JPG/JPEG encoding
  */
-int imgWidth, imgHeight, imgChannels;
+int imgWidth, imgHeight, imgChannels, compressionQuality;
 
 using namespace std;
 
