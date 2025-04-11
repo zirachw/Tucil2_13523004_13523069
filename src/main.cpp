@@ -7,6 +7,7 @@
  * @param tempImgData Temporary image data buffer for intermediate processing
  */
 unsigned char *currImgData = nullptr, *initImgData = nullptr, *tempImgData = nullptr;
+extern int compressionQuality;
 
 int main()
 {

@@ -1,6 +1,8 @@
 #ifndef QUADTREE_HPP
 #define QUADTREE_HPP
 
+extern int compressionQuality;
+
 // Libraries
 #include <queue>
 #include <time.h>
@@ -126,7 +128,7 @@ class QuadTree {
                     stbi_write_png(path.c_str(), imgWidth, imgHeight, imgChannels, currImgData, imgWidth * imgChannels);
                 } 
                 else {
-                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, imgChannels, currImgData, 90);
+                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, imgChannels, currImgData, compressionQuality);
                 }
             }
         }
@@ -142,7 +144,7 @@ class QuadTree {
                     stbi_write_png(path.c_str(), imgWidth, imgHeight, 4, tempImgData, imgWidth * imgChannels);
                 } 
                 else {
-                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, 90);
+                    stbi_write_jpg(path.c_str(), imgWidth, imgHeight, 3, tempImgData, compressionQuality);
                 }
             }
         }
@@ -247,7 +249,7 @@ class QuadTree {
                 writeCurrImage(outputPath);
                 
                 endTime = clock();  
-                finalSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
+                finalSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels, compressionQuality);
                 compressionPercentage = ((double)(initialSize - finalSize) / initialSize) * 100.0;
 
                 GifEnd(&g);
@@ -298,7 +300,7 @@ class QuadTree {
             double bestThreshold = -1;
             lastImg = false;
 
-            for (int i = 1; i <= 24; i++) {
+            for (int i = 1; i <= 13; i++) {
                 double mid = (l + r) / 2;
                 threshold = mid;
                 performQuadTree();

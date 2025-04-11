@@ -14,6 +14,8 @@
 #include <string>
 #include <algorithm>
 
+int compressionQuality;
+
 /**
  * @brief Image data buffers used throughout the compression process
  * @param currImgData Current image data buffer used for processing
@@ -59,14 +61,14 @@ class Image {
          * @param channels Number of color channels
          * @return Size in bytes after encoding
          */
-        static size_t getEncodedSize(unsigned char* image, int w, int h, const string& extension, int channels = 3) {
+        static size_t getEncodedSize(unsigned char* image, int w, int h, const string& extension, int channels = 3, int quality = 90) {
 
             size_t totalBytes = 0;
             if (extension == "png") {
                 stbi_write_png_to_func(getBytes, &totalBytes, w, h, channels, image, w * channels);
             } 
             else {
-                stbi_write_jpg_to_func(getBytes, &totalBytes, w, h, channels, image, 90);
+                stbi_write_jpg_to_func(getBytes, &totalBytes, w, h, channels, image, quality);
             }
             
             return totalBytes;
@@ -123,7 +125,28 @@ class Image {
             if (!initImgData) {
                 return "Gagal alokasi memori, coba ulang ya.";
             }
+
             memcpy(initImgData, currImgData, imgWidth * imgHeight * imgChannels);
+
+            if (extension != "png") {
+                int originalSize = getOriginalSize(path);
+
+                compressionQuality = 50;
+                int l = 5, r = 100;
+                while (l <= r) {
+                    int mid = (l+r)/2;
+
+                    int curSize = getEncodedSize(initImgData, imgWidth, imgHeight, extension, imgChannels, mid);
+
+                    if (curSize <= originalSize) {
+                        compressionQuality = mid;
+                        l = mid+1;
+                    }
+                    else {
+                        r = mid-1;
+                    }
+                }
+            }
 
             tempImgData = (unsigned char*) malloc(imgWidth * imgHeight * imgChannels);
             if (!tempImgData) {
