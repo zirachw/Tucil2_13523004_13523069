@@ -80,9 +80,9 @@ https://github.com/user-attachments/assets/c00084c6-e5fd-494e-a817-b10ed780e820
 ## 🔧 Installation
 
 ### 📦 Requirements
-- [**C++**](Java-url) 17 or later
-- [**G++ (C++ Compiler)**](Java-url) 8 or later
-- [**Git**](Gradle-url) 8.12 or later *(if self-compile again)*
+- **C++ 17** or later
+- **G++ (C++ Compiler) 8** or later
+- **Git 8.12** or later *(if self-compile again)*
 
 ### ⬇️ Installing Dependencies
 
