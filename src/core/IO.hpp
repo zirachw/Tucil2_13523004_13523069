@@ -6,7 +6,11 @@
 #include <fstream>
 #include <regex>
 #include <filesystem>
+#include <atomic>
+#include <thread>
 #include "QuadTree.hpp"
+
+extern atomic<bool> done;
 
 /**
  * @brief Image data buffers used throughout the compression process
@@ -1000,6 +1004,7 @@ class IOHandler {
             cout << RESET << endl;
         }
 
+
     public:
         /**
          * @brief Constructor that validates all required inputs
@@ -1067,6 +1072,37 @@ class IOHandler {
          * @return Output GIF path
          */
         string getGifPath() {return gifPath;}
+
+
+        static void showAnimation() {
+            using namespace std::chrono;
+            using namespace std;
+        
+            vector<vector<string>> frames = {
+                {"●", "○", "○", "○"},
+                {"○", "●", "○", "○"},
+                {"○", "○", "●", "○"},
+                {"○", "○", "○", "●"},
+                {"○", "○", "●", "○"},
+                {"○", "●", "○", "○"},
+            };
+        
+            auto start = steady_clock::now();
+            size_t frame = 0;
+        
+            while (!done) {
+                cout << "\r";
+                for (const auto& dot : frames[frame]) {
+                    cout << dot << " ";
+                }
+                cout << flush;
+        
+                this_thread::sleep_for(milliseconds(300));
+                cout << "\r         ";
+                frame = (frame + 1) % frames.size();
+            }
+            cout << "\r           " << endl; // final frame
+        }
 };
 
 #endif

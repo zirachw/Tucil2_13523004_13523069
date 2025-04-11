@@ -8,6 +8,7 @@
  */
 unsigned char *currImgData = nullptr, *initImgData = nullptr, *tempImgData = nullptr;
 extern int compressionQuality;
+atomic<bool> done(false);
 
 int main()
 {
@@ -28,8 +29,13 @@ int main()
 
     cout << RESET BRIGHT_CYAN << "Performing quadtree compression..." << endl;
 
+    std::thread animation(IOHandler::showAnimation);
+
     if (IO.getTargetPercentage() == 0) qt.performQuadTree();
     else qt.performBinserQuadTree(IO.getTargetPercentage());
+    
+    done = true;
+    animation.join();
 
     cout << BRIGHT_YELLOW << "Quadtree compression" << BRIGHT_GREEN << " done." << endl << endl;
 
