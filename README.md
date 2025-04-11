@@ -45,10 +45,12 @@ https://github.com/user-attachments/assets/c00084c6-e5fd-494e-a817-b10ed780e820
 
 ### This project contains:
 
-1. **Main Program as Image Compressor with Divide and Conquer approach for `.jpg`, `.jpeg`, and `.png` image formats**
-2. **`(Bonus)` Target Compression for more flexibility**
-3. **`(Bonus)` Structural Similarity Index (SSIM) Error Measurement Method**
-4. **`(Bonus)` GIF Output for better visualization how the QuadTree works**
+1. **Main Program as Image Compressor with Divide and Conquer approach**
+2. **Support for `.jpg`, `.jpeg`, and `.png` image formats**
+3. **Support for Windows and UNIX system**
+4. **`(Bonus)` Target Compression for more flexibility**
+5. **`(Bonus)` Structural Similarity Index (SSIM) Error Measurement Method**
+6. **`(Bonus)` GIF Output for better visualization how the QuadTree works**
 
 
 ### **Space for Improvement:** 
@@ -120,8 +122,6 @@ https://github.com/user-attachments/assets/c00084c6-e5fd-494e-a817-b10ed780e820
       chmod +x main.exe
       ./main.exe
       ```
-
-<br>
 
 ### Compile and Run
 
