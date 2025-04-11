@@ -1,34 +1,72 @@
-#include "Input.hpp"
+#include "core/IO.hpp"
 
-unsigned char* imgData = nullptr;
-unsigned char* imgReal = nullptr;
-unsigned char* img2Data = nullptr;
+/**
+ * @brief Image data buffers used throughout the compression process
+ * @param currImgData Current image data buffer used for processing
+ * @param initImgData Initial image data buffer kept as reference
+ * @param tempImgData Temporary image data buffer for intermediate processing
+ */
+unsigned char *currImgData = nullptr, *initImgData = nullptr, *tempImgData = nullptr;
+extern int compressionQuality;
+atomic<bool> done(false);
 
-int main() {
+int main()
+{
+    // ~~ IO ~~
+    IOHandler IO;
+    cout << BRIGHT_YELLOW << "Input" << BRIGHT_GREEN << " done." << endl;
 
-    // Initialize input object to get image path and other parameters
-    Input input;
-    string imageInputPath = input.getImageInputPath();
-    int mode = input.getMode();
-    int threshold = input.getThreshold();
-    int minimumBlock = input.getMinimumBlock();
-    double targetPercentage = input.getTargetPercentage();
-    string imageOutputPath = input.getImageOutputPath();
-    string gifOutputPath = input.getGifOutputPath();
+
+    //~~ Quadtree Compression Process ~~
+    QuadTree qt(IO.getInputPath(), 
+                IO.getMode(), 
+                IO.getThreshold(), 
+                IO.getMinBlock(),
+                IO.getTargetPercentage(), 
+                IO.getOutputPath(), 
+                IO.getGifPath(), 
+                IO.getInputExtension());
+
+    cout << RESET BRIGHT_CYAN << "Performing quadtree compression..." << endl;
+
+    std::thread animation(IOHandler::showAnimation);
+
+    if (IO.getTargetPercentage() == 0) qt.performQuadTree();
+    else qt.performBinserQuadTree(IO.getTargetPercentage());
     
-    QuadTree qt(imageInputPath, mode, threshold, minimumBlock, targetPercentage, imageOutputPath, gifOutputPath);
+    done = true;
+    animation.join();
+
+    cout << BRIGHT_YELLOW << "Quadtree compression" << BRIGHT_GREEN << " done." << endl << endl;
+
     
-    //no target compression
-    qt.performQuadTree();
+    //~~ Output Results ~~
+    cout << BRIGHT_WHITE ITALIC << "~" << BRIGHT_YELLOW << " Results " << BRIGHT_WHITE "~" << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Executing time: " << BRIGHT_GREEN << qt.getExecutionTime() << " ms" << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Initial size: " << BRIGHT_GREEN << qt.getInitialSize() << " bytes (" << Image::getSizeInKB(qt.getInitialSize()) << " KB)" << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Final size: " << BRIGHT_GREEN << qt.getFinalSize() << " bytes (" << Image::getSizeInKB(qt.getFinalSize()) << " KB)" << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Compression percentage: " << BRIGHT_GREEN << qt.getCompressionPercentage() << " %" << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Quadtree depth: " << BRIGHT_GREEN << qt.getQuadtreeDepth() << endl;
+    cout << RESET MAGENTA BOLD << "[-]" << RESET BRIGHT_WHITE << " Quadtree node: " << BRIGHT_GREEN << qt.getQuadtreeNode() << endl;
+    cout << endl;
 
-    cout << "Performing quadtree compression..." << endl;
-    stbi_image_free(imgData);
-    free(imgReal);
-    free(img2Data);
+    
+    //~~ Free Memory ~~
+    if (currImgData != nullptr) {
+        free(currImgData);
+        currImgData = nullptr;
+    }
 
-    // cout << "Performing quadtree compression with target compression..." << endl;
-    // with target compression reducing 30% of the original image size
-    // qt.performBinserQuadTree(0.1);
+    if (initImgData != nullptr) {
+        free(initImgData);
+        initImgData = nullptr;
+    }
 
-    cout << "Quadtree compression completed." << endl;
+    if (tempImgData != nullptr) {
+        free(tempImgData);
+        tempImgData = nullptr;
+    }
+
+    cout << RESET;
+    return 0;
 }
