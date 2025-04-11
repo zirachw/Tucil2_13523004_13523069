@@ -1077,31 +1077,60 @@ class IOHandler {
         static void showAnimation() {
             using namespace std::chrono;
             using namespace std;
+
+            const int GRID_SIZE = 5;
+            const int FRAMES = 16;
         
-            vector<vector<string>> frames = {
-                {"●", "○", "○", "○"},
-                {"○", "●", "○", "○"},
-                {"○", "○", "●", "○"},
-                {"○", "○", "○", "●"},
-                {"○", "○", "●", "○"},
-                {"○", "●", "○", "○"},
+            pair<int, int> pos[FRAMES] = {
+                {0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4},
+                {1, 4}, {2, 4}, {3, 4}, {4, 4},
+                {4, 3}, {4, 2}, {4, 1}, {4, 0},
+                {3, 0}, {2, 0}, {1, 0}
             };
-        
-            auto start = steady_clock::now();
-            size_t frame = 0;
-        
+
+            
+            bool first = true;
+            int frame = 0;
             while (!done) {
-                cout << "\r";
-                for (const auto& dot : frames[frame]) {
-                    cout << dot << " ";
+                char grid[GRID_SIZE][GRID_SIZE];
+
+                // Isi semua grid dengan spasi
+                for (int i = 0; i < GRID_SIZE; ++i)
+                    for (int j = 0; j < GRID_SIZE; ++j)
+                        grid[i][j] = ' ';
+
+                // Tempatkan titik di posisi saat ini
+                auto [r, c] = pos[frame % FRAMES];
+                grid[r][c] = '#';
+                
+                auto [r2, c2] = pos[(frame + FRAMES/2) % FRAMES];
+                grid[r2][c2] = '#';
+
+                // Tampilkan grid
+                if (!first) {
+                    for (int i = 0; i < GRID_SIZE; ++i) cout << "\x1b[A";
                 }
-                cout << flush;
-        
-                this_thread::sleep_for(milliseconds(300));
-                cout << "\r         ";
-                frame = (frame + 1) % frames.size();
+                else first = !first;
+
+                for (int i = 0; i < GRID_SIZE; ++i) {
+                    for (int j = 0; j < GRID_SIZE; ++j) {
+                        cout << grid[i][j] << ' ';
+                    }
+                    cout << '\n';
+                }
+
+                frame++;
+                std::this_thread::sleep_for(std::chrono::milliseconds(150));
             }
-            cout << "\r           " << endl; // final frame
+
+            for (int i = 0; i < GRID_SIZE; ++i) cout << "\x1b[A";
+            for (int i = 0; i < GRID_SIZE; ++i) {
+                for (int j = 0; j < GRID_SIZE+10; ++j) {
+                    cout << ' ';
+                }
+                cout << endl;
+            }
+            for (int i = 0; i < GRID_SIZE; ++i) cout << "\x1b[A";
         }
 };
 

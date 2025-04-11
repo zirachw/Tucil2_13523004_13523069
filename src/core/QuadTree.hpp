@@ -305,7 +305,7 @@ class QuadTree {
                 threshold = mid;
                 performQuadTree();
     
-                size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels);
+                size_t currentImageSize = Image::getEncodedSize(currImgData, imgWidth, imgHeight, inputExtension, imgChannels, compressionQuality);
 
                 if (currentImageSize <= targetImageSize) {
                     bestThreshold = mid;
