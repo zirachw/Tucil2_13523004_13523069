@@ -13,17 +13,30 @@ A simple interactive **CLI** written in `C++` that implements the **Divide and C
 
 <br>
 
+ <div align="center" id="contributor">
+   <strong>
+     <table align="center">
+       <tr align="center">
+         <td>NIM</td>
+         <td>Name</td>
+         <td>GitHub</td>
+       </tr>
+       <tr align="center">
+         <td>13523004</td>
+         <td>Razi Rachman Widyadhana</td>
+         <td><a href="https://github.com/zirachw">@zirachw</a></td>
+       </tr>
+       <tr align="center">
+         <td>13523069</td>
+         <td>Mochammad Fariz Rifqi Rizqulloh</td>
+         <td><a href="https://github.com/Fariz36">@Fariz36</a></td>
+       </tr>
+     </table>
+   </strong>
+ </div>
+
 <div align="center">
   
-| NIM       | Name                               |
-|-----------|------------------------------------|
-| 13523004  | Razi Rachman Widyadhana            |
-| 13523069  | Mochammad Fariz Rifqi Rizqulloh    |
-
-</div>
-
-<div align="center">
-
 ### 🚀 Tech Stacks
 
   <p align="center">
